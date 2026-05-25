@@ -29,7 +29,7 @@ git remote remove origin 2>nul
 
 echo.
 echo Nieuwe GitHub remote toevoegen...
-git remote add origin https://github.com/BuzziMessenger/BuzziMessenger.git
+git remote add origin https://github.com/BuzziMessenger/Buzzi5ChatGPT.git
 
 echo.
 echo Uploaden naar GitHub...
