@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MSN CLEAN FINAL</title>
+<title>MSN FINAL PRO FEEL</title>
 
 <style>
 body {
@@ -27,9 +27,21 @@ body {
   background: white;
   margin: 6px 0;
   padding: 8px;
-  border: 1px solid #ccc;
   cursor: pointer;
+  position: relative;
 }
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  position: absolute;
+  right: 10px;
+  top: 15px;
+}
+
+.online { background: #3ad13a; }
+.offline { background: gray; }
 
 /* CHAT */
 .chatBox {
@@ -47,20 +59,33 @@ body {
 
 .chat {
   flex: 1;
-  overflow-y: auto;
   padding: 10px;
+  overflow-y: auto;
   background: #f9fbff;
-  min-height: 0;
 }
 
 .msg {
   margin: 5px 0;
   padding: 6px;
   max-width: 70%;
+  border-radius: 6px;
+  font-size: 14px;
 }
 
-.me { background: #d7ebff; margin-left: auto; }
-.other { background: #eee; }
+.me {
+  background: #d7ebff;
+  margin-left: auto;
+}
+
+.other {
+  background: #eee;
+}
+
+.time {
+  font-size: 10px;
+  color: #666;
+  margin-top: 3px;
+}
 
 .input {
   display: flex;
@@ -93,31 +118,30 @@ button {
   z-index: 999;
 }
 
-/* ========== MOBILE FIX ========== */
-@media (max-width: 768px) {
+/* NUDGE */
+@keyframes shake {
+  0% { transform: translate(0,0); }
+  25% { transform: translate(4px,0); }
+  50% { transform: translate(-4px,0); }
+  75% { transform: translate(4px,0); }
+  100% { transform: translate(0,0); }
+}
 
-  body {
-    flex-direction: column;
-  }
+.shake {
+  animation: shake 0.2s;
+}
+
+/* MOBILE */
+@media (max-width: 768px) {
+  body { flex-direction: column; }
 
   .left {
     width: 100%;
     height: 35vh;
-    border-right: none;
-    border-bottom: 1px solid #2b579a;
   }
 
   .chatBox {
-    width: 100%;
     height: 65vh;
-  }
-
-  .user {
-    font-size: 14px;
-  }
-
-  input, button {
-    font-size: 16px;
   }
 }
 </style>
@@ -158,6 +182,9 @@ let me = null;
 let active = null;
 let chats = {};
 
+const sndSend = new Audio("https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3");
+const sndRecv = new Audio("https://assets.mixkit.co/active_storage/sfx/2356/2356-preview.mp3");
+
 /* LOGIN */
 function login() {
   me = document.getElementById("name").value || ("User" + Math.floor(Math.random()*1000));
@@ -177,6 +204,11 @@ socket.on("users", (users) => {
     div.className = "user";
 
     div.innerHTML = `<b>${name}</b><br><small>${data.status} - ${data.text}</small>`;
+
+    const dot = document.createElement("div");
+    dot.className = "dot " + (data.status === "online" ? "online" : "offline");
+
+    div.appendChild(dot);
 
     div.onclick = () => {
       active = name;
@@ -206,7 +238,12 @@ socket.on("chat_message", (msg) => {
   if (!chats[other]) chats[other] = [];
   chats[other].push(msg);
 
-  if (active === other) render();
+  sndRecv.play();
+
+  if (active === other) {
+    render();
+    nudge();
+  }
 });
 
 /* SEND */
@@ -222,6 +259,7 @@ function send() {
     text
   });
 
+  sndSend.play();
   input.value = "";
 }
 
@@ -233,11 +271,30 @@ function render() {
   (chats[active] || []).forEach(m => {
     const div = document.createElement("div");
     div.className = "msg " + (m.from === me ? "me" : "other");
-    div.innerText = `${m.from}: ${m.text}`;
+
+    const time = new Date(m.time || Date.now()).toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+
+    div.innerHTML = `
+      <div>${m.from}: ${m.text}</div>
+      <div class="time">${time}</div>
+    `;
+
     chat.appendChild(div);
   });
 
   chat.scrollTop = chat.scrollHeight;
+}
+
+/* NUDGE */
+function nudge() {
+  const box = document.querySelector(".chatBox");
+  if (!box) return;
+
+  box.classList.add("shake");
+  setTimeout(() => box.classList.remove("shake"), 200);
 }
 </script>
 
