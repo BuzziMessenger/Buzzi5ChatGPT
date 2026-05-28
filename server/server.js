@@ -15,12 +15,8 @@ const io = new Server(server, {
 const users = {};
 const messages = {};
 
-function roomKey(a, b) {
+function key(a, b) {
   return [a, b].sort().join("-");
-}
-
-function clean(t) {
-  return (t || "").replace(/</g, "").replace(/>/g, "");
 }
 
 io.on("connection", (socket) => {
@@ -33,7 +29,8 @@ io.on("connection", (socket) => {
     users[name] = {
       id: socket.id,
       status: "online",
-      text: "Available"
+      text: "Available",
+      lastSeen: null
     };
 
     io.emit("users", users);
@@ -41,22 +38,22 @@ io.on("connection", (socket) => {
 
   socket.on("set_status_text", ({ user, text }) => {
     if (users[user]) {
-      users[user].text = clean(text);
+      users[user].text = text;
       io.emit("users", users);
     }
   });
 
   socket.on("chat_message", (msg) => {
-    const key = roomKey(msg.from, msg.to);
+    const k = key(msg.from, msg.to);
 
-    if (!messages[key]) messages[key] = [];
+    if (!messages[k]) messages[k] = [];
 
     const fullMsg = {
       ...msg,
       time: Date.now()
     };
 
-    messages[key].push(fullMsg);
+    messages[k].push(fullMsg);
 
     const target = users[msg.to];
 
@@ -68,7 +65,14 @@ io.on("connection", (socket) => {
   });
 
   socket.on("get_history", ({ userA, userB }) => {
-    socket.emit("history", messages[roomKey(userA, userB)] || []);
+    socket.emit("history", messages[key(userA, userB)] || []);
+  });
+
+  socket.on("typing", ({ from, to }) => {
+    const target = users[to];
+    if (target) {
+      io.to(target.id).emit("typing", { from });
+    }
   });
 
   socket.on("disconnect", () => {
@@ -76,10 +80,11 @@ io.on("connection", (socket) => {
 
     if (users[socket.name]) {
       users[socket.name].status = "offline";
+      users[socket.name].lastSeen = Date.now();
     }
 
     io.emit("users", users);
   });
 });
 
-server.listen(3000, () => console.log("MSN PRO SERVER RUNNING"));
+server.listen(3000, () => console.log("MSN NEXT LEVEL SERVER"));

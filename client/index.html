@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MSN FINAL PRO FEEL</title>
+<title>MSN NEXT LEVEL</title>
 
 <style>
 body {
@@ -118,17 +118,17 @@ button {
   z-index: 999;
 }
 
-/* NUDGE */
-@keyframes shake {
-  0% { transform: translate(0,0); }
-  25% { transform: translate(4px,0); }
-  50% { transform: translate(-4px,0); }
-  75% { transform: translate(4px,0); }
-  100% { transform: translate(0,0); }
+/* TYPING */
+#typing {
+  font-size: 11px;
+  color: #666;
+  padding-left: 8px;
 }
 
-.shake {
-  animation: shake 0.2s;
+/* UNREAD */
+.user.unread {
+  border-left: 4px solid #2b579a;
+  background: #e6f0ff;
 }
 
 /* MOBILE */
@@ -166,6 +166,7 @@ button {
 <div class="chatBox">
   <div class="header" id="header">Select chat</div>
   <div class="chat" id="chat"></div>
+  <div id="typing"></div>
 
   <div class="input">
     <input id="msg" placeholder="Typ..." />
@@ -181,9 +182,6 @@ const socket = io("https://buzzimessenger.onrender.com");
 let me = null;
 let active = null;
 let chats = {};
-
-const sndSend = new Audio("https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3");
-const sndRecv = new Audio("https://assets.mixkit.co/active_storage/sfx/2356/2356-preview.mp3");
 
 /* LOGIN */
 function login() {
@@ -203,15 +201,26 @@ socket.on("users", (users) => {
     const div = document.createElement("div");
     div.className = "user";
 
-    div.innerHTML = `<b>${name}</b><br><small>${data.status} - ${data.text}</small>`;
+    let status = data.status;
+
+    if (data.status === "offline" && data.lastSeen) {
+      const mins = Math.floor((Date.now() - data.lastSeen) / 60000);
+      status = `offline (${mins}m ago)`;
+    }
+
+    div.innerHTML = `
+      <b>${name}</b><br>
+      <small>${status} - ${data.text}</small>
+    `;
 
     const dot = document.createElement("div");
     dot.className = "dot " + (data.status === "online" ? "online" : "offline");
-
     div.appendChild(dot);
 
     div.onclick = () => {
       active = name;
+      div.classList.remove("unread");
+
       document.getElementById("header").innerText = "Chat met " + name;
 
       socket.emit("get_history", {
@@ -231,14 +240,18 @@ socket.on("history", (msgs) => {
   render();
 });
 
-/* MESSAGE */
+/* CHAT */
 socket.on("chat_message", (msg) => {
   const other = msg.from === me ? msg.to : msg.from;
 
   if (!chats[other]) chats[other] = [];
   chats[other].push(msg);
 
-  sndRecv.play();
+  if (active !== other) {
+    const el = [...document.querySelectorAll(".user")]
+      .find(u => u.innerText.includes(other));
+    if (el) el.classList.add("unread");
+  }
 
   if (active === other) {
     render();
@@ -259,9 +272,29 @@ function send() {
     text
   });
 
-  sndSend.play();
   input.value = "";
 }
+
+/* TYPING */
+document.getElementById("msg").addEventListener("input", () => {
+  if (!active) return;
+
+  socket.emit("typing", {
+    from: me,
+    to: active
+  });
+});
+
+socket.on("typing", (d) => {
+  if (d.from === active) {
+    document.getElementById("typing").innerText =
+      d.from + " is typing...";
+
+    setTimeout(() => {
+      document.getElementById("typing").innerText = "";
+    }, 800);
+  }
+});
 
 /* RENDER */
 function render() {
