@@ -1,17 +1,63 @@
-<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<title>MSN Safe Mode</title>
 
-<script>
-const socket = io("https://buzzimessenger.onrender.com");
+<style>
+body {
+  font-family: Tahoma;
+  background: #cfe3ff;
+  display: flex;
+  justify-content: center;
+  padding-top: 50px;
+}
 
-socket.on("connect", () => {
-  console.log("CONNECTED OK:", socket.id);
+.box {
+  width: 600px;
+  height: 400px;
+  background: white;
+  border: 1px solid #2b579a;
+  display: flex;
+}
 
-  socket.emit("test_message", {
-    text: "HELLO FROM FRONTEND"
-  });
-});
+.left {
+  width: 200px;
+  background: #eaf3ff;
+  border-right: 1px solid #2b579a;
+  padding: 10px;
+}
 
-socket.on("test_message", (data) => {
-  console.log("RECEIVED BACK:", data);
-});
-</script>
+.right {
+  flex: 1;
+  padding: 10px;
+}
+
+.contact {
+  padding: 5px;
+  background: white;
+  border: 1px solid #ccc;
+  margin-bottom: 5px;
+  cursor: pointer;
+}
+</style>
+</head>
+
+<body>
+
+<div class="box">
+  <div class="left">
+    <h4>Contacts</h4>
+    <div class="contact">Friend 1</div>
+    <div class="contact">Friend 2</div>
+    <div class="contact">Friend 3</div>
+  </div>
+
+  <div class="right">
+    <h3>MSN werkt weer 👍</h3>
+    <p>Als je dit ziet, is je frontend OK.</p>
+  </div>
+</div>
+
+</body>
+</html>
