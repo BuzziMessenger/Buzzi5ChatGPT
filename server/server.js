@@ -12,7 +12,7 @@ const io = new Server(server, {
   cors: { origin: "*" }
 });
 
-console.log("🔥 MSN v6.2 FULL STABLE SERVER");
+console.log("🔥 MSN REAL LEGACY FULL SERVER");
 
 const users = {};
 const messages = {};
@@ -21,27 +21,26 @@ function roomKey(a, b) {
   return [a, b].sort().join("-");
 }
 
+function avatar(seed) {
+  return `https://api.dicebear.com/7.x/pixel-art/svg?seed=${seed}`;
+}
+
+function clean(text) {
+  return (text || "").replace(/</g, "").replace(/>/g, "");
+}
+
 function pushMessage(a, b, msg) {
   const key = roomKey(a, b);
   if (!messages[key]) messages[key] = [];
   messages[key].push(msg);
-
-  if (messages[key].length > 300) {
-    messages[key].shift();
-  }
+  if (messages[key].length > 500) messages[key].shift();
 }
 
 function broadcastUsers() {
   io.emit("users", users);
 }
 
-function avatar(seed) {
-  return `https://api.dicebear.com/7.x/pixel-art/svg?seed=${seed}`;
-}
-
 io.on("connection", (socket) => {
-
-  console.log("🟢 CONNECT:", socket.id);
 
   socket.on("register", (username) => {
     if (!username) return;
@@ -61,7 +60,7 @@ io.on("connection", (socket) => {
 
   socket.on("set_status_text", ({ user, text }) => {
     if (users[user]) {
-      users[user].text = text || "";
+      users[user].text = clean(text);
       broadcastUsers();
     }
   });
@@ -71,7 +70,7 @@ io.on("connection", (socket) => {
     const msg = {
       from: data.from,
       to: data.to,
-      text: data.text,
+      text: clean(data.text),
       time: Date.now()
     };
 

@@ -2,7 +2,7 @@
 <html lang="nl">
 <head>
 <meta charset="UTF-8">
-<title>MSN v6.2</title>
+<title>MSN REAL LEGACY</title>
 
 <style>
 body {
@@ -11,16 +11,6 @@ body {
   background: #cfe3ff;
   height: 100vh;
   display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.app {
-  width: 920px;
-  height: 650px;
-  display: flex;
-  background: white;
-  border: 1px solid #2b579a;
 }
 
 /* CONTACTS */
@@ -43,48 +33,55 @@ body {
   align-items: center;
 }
 
+.user.active {
+  background: #d7ebff;
+  border: 1px solid #2b579a;
+}
+
 .avatar {
   width: 34px;
   height: 34px;
   border-radius: 6px;
 }
 
-/* CHAT */
-.right {
-  flex: 1;
+/* CHAT WINDOW */
+.chatWindow {
+  position: absolute;
+  bottom: 0;
+  right: 20px;
+  width: 380px;
+  height: 450px;
+  background: white;
+  border: 1px solid #2b579a;
   display: flex;
   flex-direction: column;
+  box-shadow: 0 0 15px rgba(0,0,0,0.25);
+  transition: transform 0.1s;
 }
 
 .header {
   background: #2b579a;
   color: white;
-  padding: 10px;
+  padding: 8px;
 }
 
 .chat {
   flex: 1;
-  padding: 10px;
+  padding: 8px;
   overflow-y: auto;
   background: #f9fbff;
 }
 
 .msg {
-  margin: 6px 0;
-  padding: 7px;
-  max-width: 70%;
+  margin: 5px 0;
+  padding: 6px;
+  max-width: 80%;
+  border-radius: 4px;
 }
 
-.me {
-  background: #d7ebff;
-  margin-left: auto;
-}
+.me { background: #d7ebff; margin-left: auto; }
+.other { background: #eee; }
 
-.other {
-  background: #eee;
-}
-
-/* INPUT */
 .input {
   display: flex;
   border-top: 1px solid #ccc;
@@ -92,88 +89,108 @@ body {
 
 input {
   flex: 1;
-  padding: 10px;
+  padding: 8px;
   border: none;
 }
 
 button {
-  padding: 10px;
   background: #2b579a;
   color: white;
   border: none;
+  padding: 8px;
+  cursor: pointer;
 }
 
-/* STATUS */
+#typing {
+  font-size: 11px;
+  color: gray;
+  padding: 3px 8px;
+}
+
 .statusbar {
-  display: flex;
-  gap: 5px;
   padding: 5px;
+  background: #f5f5f5;
   border-bottom: 1px solid #ccc;
 }
 
-/* DEBUG */
-#debug {
+/* LOGIN */
+#loginScreen {
   position: fixed;
-  bottom: 10px;
-  left: 10px;
-  background: black;
-  color: lime;
-  font-size: 12px;
-  padding: 5px;
+  inset: 0;
+  background: #2b579a;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  color: white;
+  z-index: 9999;
 }
 </style>
 </head>
 
 <body>
 
-<div class="app">
-
-  <div class="left">
-    <h4>Contacts</h4>
-    <div id="users"></div>
-  </div>
-
-  <div class="right">
-
-    <div class="header" id="header">Select chat</div>
-
-    <div class="statusbar">
-      <input id="statusText" placeholder="Set status..." />
-      <button onclick="setStatus()">Set</button>
-    </div>
-
-    <div class="chat" id="chat"></div>
-    <div id="typing"></div>
-
-    <div class="input">
-      <input id="input" placeholder="Typ..." />
-      <button onclick="send()">Send</button>
-    </div>
-
-  </div>
-
+<!-- LOGIN -->
+<div id="loginScreen">
+  <h2>MSN Messenger</h2>
+  <input id="loginInput" placeholder="Username..." style="padding:10px;">
+  <button onclick="login()" style="margin-top:10px; padding:10px;">Login</button>
 </div>
 
-<div id="debug">STATUS: LOADING...</div>
+<!-- CONTACTS -->
+<div class="left">
+  <h4>Contacts</h4>
+  <div id="users"></div>
+</div>
+
+<!-- CHAT WINDOW -->
+<div class="chatWindow" id="chatWindow" style="display:none;">
+  <div class="header" id="header">Chat</div>
+
+  <div class="statusbar">
+    <input id="statusText" placeholder="Set status..." />
+  </div>
+
+  <div class="chat" id="chat"></div>
+  <div id="typing"></div>
+
+  <div class="input">
+    <input id="input" placeholder="Typ..." />
+    <button onclick="send()">Send</button>
+  </div>
+</div>
+
+<!-- SOUNDS -->
+<audio id="sndSend" src="https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3"></audio>
+<audio id="sndRecv" src="https://assets.mixkit.co/active_storage/sfx/2356/2356-preview.mp3"></audio>
 
 <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 
 <script>
-const socket = io("https://buzzimessenger.onrender.com", {
-  transports: ["websocket", "polling"]
-});
+const socket = io("https://buzzimessenger.onrender.com");
 
 let me = null;
 let active = null;
 let chats = {};
 
-/* CONNECT */
-socket.on("connect", () => {
-  document.getElementById("debug").innerText = "STATUS: CONNECTED";
+function login() {
+  me = document.getElementById("loginInput").value;
 
-  me = prompt("Username:");
+  if (!me) return;
+
+  document.getElementById("loginScreen").style.display = "none";
   socket.emit("register", me);
-});
+}
+
+/* EMOJIS */
+function emoji(t) {
+  return t
+    .replaceAll(":)", "😊")
+    .replaceAll(":(", "😢")
+    .replaceAll(":D", "😄")
+    .replaceAll("<3", "❤️")
+    .replaceAll("lol", "😂");
+}
 
 /* USERS */
 socket.on("users", (users) => {
@@ -184,10 +201,10 @@ socket.on("users", (users) => {
     if (name === me) return;
 
     const div = document.createElement("div");
-    div.className = "user";
+    div.className = "user " + (active === name ? "active" : "");
 
     div.innerHTML = `
-      <img class="avatar" src="${data.avatar}" />
+      <img class="avatar" src="${data.avatar}">
       <div>
         <b>${name}</b><br>
         <small>${data.status} - ${data.text}</small>
@@ -197,8 +214,8 @@ socket.on("users", (users) => {
     div.onclick = () => {
       active = name;
 
-      document.getElementById("header").innerText =
-        "Chat met " + name;
+      document.getElementById("chatWindow").style.display = "flex";
+      document.getElementById("header").innerText = "Chat met " + name;
 
       socket.emit("get_history", {
         userA: me,
@@ -213,7 +230,6 @@ socket.on("users", (users) => {
 /* HISTORY */
 socket.on("history", (msgs) => {
   if (!active) return;
-
   chats[active] = msgs;
   render();
 });
@@ -225,44 +241,36 @@ socket.on("chat_message", (msg) => {
   if (!chats[other]) chats[other] = [];
   chats[other].push(msg);
 
+  document.getElementById("sndRecv").play();
+
   if (active === other) render();
-});
-
-/* TYPING */
-socket.on("typing", (d) => {
-  if (d.from === active) {
-    document.getElementById("typing").innerText =
-      d.from + " is typing...";
-
-    setTimeout(() => {
-      document.getElementById("typing").innerText = "";
-    }, 800);
-  }
 });
 
 /* SEND */
 function send() {
   const input = document.getElementById("input");
-  const text = input.value.trim();
+  let text = input.value.trim();
 
   if (!text || !active) return;
 
   socket.emit("chat_message", {
     from: me,
     to: active,
-    text
+    text: emoji(text)
   });
+
+  document.getElementById("sndSend").play();
 
   input.value = "";
 }
 
 /* STATUS */
-function setStatus() {
+document.getElementById("statusText").addEventListener("input", () => {
   socket.emit("set_status_text", {
     user: me,
     text: document.getElementById("statusText").value
   });
-}
+});
 
 /* RENDER */
 function render() {
