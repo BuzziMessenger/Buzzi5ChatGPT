@@ -13,13 +13,16 @@ const io = new Server(server, {
 });
 
 io.on("connection", (socket) => {
-  console.log("user connected");
 
-  socket.on("message", (data) => {
-    io.emit("message", data);
+  socket.on("private_message", (data) => {
+
+    // stuur naar iedereen (simpel model)
+    io.emit("private_message", data);
+
   });
+
 });
 
 server.listen(process.env.PORT || 3000, () => {
-  console.log("running");
+  console.log("server running");
 });

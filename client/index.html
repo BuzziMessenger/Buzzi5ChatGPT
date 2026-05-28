@@ -7,7 +7,7 @@
   <style>
     body {
       margin: 0;
-      font-family: Tahoma, Arial;
+      font-family: Tahoma;
       background: linear-gradient(#cfe3ff, #ffffff);
       display: flex;
       justify-content: center;
@@ -17,14 +17,13 @@
 
     .app {
       display: flex;
-      width: 700px;
-      height: 550px;
+      width: 720px;
+      height: 560px;
       border: 1px solid #2b579a;
       box-shadow: 0 10px 30px rgba(0,0,0,0.2);
       background: white;
     }
 
-    /* CONTACT LIST */
     .contacts {
       width: 200px;
       background: #eaf3ff;
@@ -38,19 +37,12 @@
       background: white;
       border: 1px solid #ccc;
       cursor: pointer;
-      font-size: 14px;
     }
 
     .contact:hover {
       background: #d7ebff;
     }
 
-    .online {
-      color: green;
-      font-size: 12px;
-    }
-
-    /* CHAT */
     .chatbox {
       flex: 1;
       display: flex;
@@ -82,7 +74,6 @@
     .me {
       background: #d7ebff;
       margin-left: auto;
-      text-align: right;
     }
 
     .other {
@@ -120,25 +111,15 @@
   <div class="contacts">
     <h4>Contacten</h4>
 
-    <div class="contact" onclick="selectUser('Friend 1')">
-      Friend 1 <div class="online">🟢 online</div>
-    </div>
-
-    <div class="contact" onclick="selectUser('Friend 2')">
-      Friend 2 <div class="online">🟢 online</div>
-    </div>
-
-    <div class="contact" onclick="selectUser('Friend 3')">
-      Friend 3 <div class="online">🟡 away</div>
-    </div>
+    <div class="contact" onclick="selectUser('Friend 1')">🟢 Friend 1</div>
+    <div class="contact" onclick="selectUser('Friend 2')">🟢 Friend 2</div>
+    <div class="contact" onclick="selectUser('Friend 3')">🟡 Friend 3</div>
   </div>
 
   <!-- CHAT -->
   <div class="chatbox">
 
-    <div class="header" id="chatHeader">
-      💬 Chat met niemand
-    </div>
+    <div class="header" id="header">💬 Geen chat geselecteerd</div>
 
     <div id="chat" class="chat"></div>
 
@@ -156,50 +137,68 @@
 <script>
 const socket = io("https://buzzimessenger.onrender.com");
 
-let currentUser = "Friend 1";
+let currentUser = null;
+let chats = {}; // opslag per contact
 
 function selectUser(name) {
   currentUser = name;
-  document.getElementById("chatHeader").innerText = "💬 Chat met " + name;
-  document.getElementById("chat").innerHTML = "";
+  document.getElementById("header").innerText = "💬 Chat met " + name;
+
+  if (!chats[name]) chats[name] = [];
+
+  renderChat();
 }
 
-function addMsg(text, type) {
+function renderChat() {
   const chat = document.getElementById("chat");
+  chat.innerHTML = "";
 
-  chat.innerHTML += `
-    <div class="msg ${type}">
-      ${text}
-      <div style="font-size:10px; opacity:0.6;">
-        ${new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}
+  if (!currentUser) return;
+
+  chats[currentUser].forEach(m => {
+    chat.innerHTML += `
+      <div class="msg ${m.type}">
+        ${m.text}
       </div>
-    </div>
-  `;
+    `;
+  });
 
   chat.scrollTop = chat.scrollHeight;
 }
 
-/* RECEIVE MESSAGE */
-socket.on("message", (data) => {
-  addMsg(data.user + ": " + data.text, "other");
-});
-
-/* SEND MESSAGE */
 function send() {
   const input = document.getElementById("text");
   const msg = input.value.trim();
-  if (!msg) return;
+  if (!msg || !currentUser) return;
 
-  addMsg("Jij: " + msg, "me");
+  if (!chats[currentUser]) chats[currentUser] = [];
 
-  socket.emit("message", {
-    user: "Robbin",
-    text: msg,
-    to: currentUser
+  chats[currentUser].push({ text: "Jij: " + msg, type: "me" });
+  renderChat();
+
+  socket.emit("private_message", {
+    to: currentUser,
+    from: "Robbin",
+    text: msg
   });
 
   input.value = "";
 }
+
+/* RECEIVE PRIVATE MESSAGE */
+socket.on("private_message", (data) => {
+
+  if (!chats[data.from]) chats[data.from] = [];
+
+  chats[data.from].push({
+    text: data.from + ": " + data.text,
+    type: "other"
+  });
+
+  if (currentUser === data.from) {
+    renderChat();
+  }
+});
 </script>
 
 </body>
