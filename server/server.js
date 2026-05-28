@@ -1,22 +1,34 @@
 const express = require("express");
 const cors = require("cors");
+const http = require("http");
+const { Server } = require("socket.io");
 
 const app = express();
-
 app.use(cors());
-app.use(express.json());
 
-// CHAT ENDPOINT (DIT IS JE CODE)
-app.post("/chat", (req, res) => {
-  res.json({ reply: "Echo: " + req.body.message });
+const server = http.createServer(app);
+
+const io = new Server(server, {
+  cors: {
+    origin: "*"
+  }
 });
 
-// test route (optioneel)
-app.get("/", (req, res) => {
-  res.send("Buzzi server werkt");
+io.on("connection", (socket) => {
+  console.log("User connected:", socket.id);
+
+  socket.on("message", (msg) => {
+    io.emit("message", {
+      text: msg,
+      time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+    });
+  });
+
+  socket.on("disconnect", () => {
+    console.log("User disconnected");
+  });
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log("Server running on port " + PORT);
+server.listen(process.env.PORT || 3000, () => {
+  console.log("Server running");
 });

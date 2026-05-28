@@ -1,120 +1,7 @@
-<!DOCTYPE html>
-<html lang="nl">
-<head>
-  <meta charset="UTF-8" />
-  <title>Buzzi Messenger</title>
-
-  <style>
-    body {
-      margin: 0;
-      font-family: Tahoma, Arial;
-      background: linear-gradient(#cfe3ff, #ffffff);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-    }
-
-    .msn {
-      width: 450px;
-      height: 550px;
-      background: #f4f9ff;
-      border: 1px solid #2b579a;
-      display: flex;
-      flex-direction: column;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-      overflow: hidden;
-    }
-
-    .header {
-      background: #2b579a;
-      color: white;
-      padding: 10px;
-      font-weight: bold;
-    }
-
-    .status {
-      font-size: 12px;
-      color: #b6ffb6;
-    }
-
-    .chat {
-      flex: 1;
-      padding: 10px;
-      overflow-y: auto;
-      background: white;
-    }
-
-    .msg {
-      margin: 6px 0;
-      padding: 6px 10px;
-      border-radius: 8px;
-      max-width: 75%;
-      font-size: 14px;
-    }
-
-    .me {
-      background: #d7ebff;
-      margin-left: auto;
-      text-align: right;
-    }
-
-    .bot {
-      background: #eeeeee;
-      margin-right: auto;
-    }
-
-    .input {
-      display: flex;
-      border-top: 1px solid #ccc;
-    }
-
-    .input input {
-      flex: 1;
-      padding: 10px;
-      border: none;
-      outline: none;
-    }
-
-    .input button {
-      background: #2b579a;
-      color: white;
-      border: none;
-      padding: 10px 15px;
-      cursor: pointer;
-    }
-
-    .time {
-      font-size: 10px;
-      opacity: 0.6;
-      margin-top: 3px;
-    }
-  </style>
-</head>
-
-<body>
-
-<div class="msn">
-  <div class="header">
-    💬 Buzzi Messenger
-    <div class="status">🟢 Online</div>
-  </div>
-
-  <div id="chat" class="chat"></div>
-
-  <div class="input">
-    <input id="text" placeholder="Typ bericht..." />
-    <button onclick="send()">Send</button>
-  </div>
-</div>
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 
 <script>
-function time() {
-  return new Date().toLocaleTimeString([], {
-    hour: '2-digit',
-    minute: '2-digit'
-  });
-}
+const socket = io("https://buzzimessenger.onrender.com");
 
 function addMsg(text, type) {
   const chat = document.getElementById("chat");
@@ -122,55 +9,26 @@ function addMsg(text, type) {
   chat.innerHTML += `
     <div class="msg ${type}">
       ${text}
-      <div class="time">${time()}</div>
+      <div class="time">${new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div>
     </div>
   `;
 
   chat.scrollTop = chat.scrollHeight;
 }
 
-async function send() {
+socket.on("message", (data) => {
+  addMsg(data.text, "bot");
+});
+
+function send() {
   const input = document.getElementById("text");
   const msg = input.value.trim();
   if (!msg) return;
 
-  // user message
   addMsg("Jij: " + msg, "me");
+
+  socket.emit("message", msg);
+
   input.value = "";
-
-  const chat = document.getElementById("chat");
-
-  // typing indicator
-  const typing = document.createElement("div");
-  typing.id = "typing";
-  typing.className = "msg bot";
-  typing.innerHTML = "Bot is aan het typen...";
-  chat.appendChild(typing);
-  chat.scrollTop = chat.scrollHeight;
-
-  try {
-    const res = await fetch("https://buzzimessenger.onrender.com/chat", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ message: msg })
-    });
-
-    const data = await res.json();
-
-    // remove typing
-    document.getElementById("typing")?.remove();
-
-    // bot reply
-    addMsg("Bot: " + data.reply, "bot");
-
-  } catch (err) {
-    document.getElementById("typing")?.remove();
-    addMsg("❌ Server niet bereikbaar", "bot");
-  }
 }
 </script>
-
-</body>
-</html>
