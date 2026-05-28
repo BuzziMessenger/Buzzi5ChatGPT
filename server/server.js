@@ -12,39 +12,59 @@ const io = new Server(server, {
   cors: { origin: "*" }
 });
 
-console.log("🔥 SERVER LOADED");
+console.log("🔥 MSN v3 SERVER LOADED");
 
-const users = {}; // username -> socket.id
+const users = {};
+const messageBuffer = []; // laatste 50 messages
+
+function trimBuffer() {
+  if (messageBuffer.length > 50) {
+    messageBuffer.splice(0, messageBuffer.length - 50);
+  }
+}
 
 io.on("connection", (socket) => {
   console.log("🟢 CONNECTED:", socket.id);
 
-  // REGISTER USER
+  // REGISTER
   socket.on("register", (username) => {
     if (!username) return;
 
     socket.username = username;
     users[username] = socket.id;
 
-    console.log("👤 REGISTER:", username);
-
     io.emit("users", Object.keys(users));
 
-    io.emit("system_message", `${username} is online`);
+    // stuur history
+    socket.emit("message_history", messageBuffer);
   });
 
-  // PRIVATE MESSAGE
-  socket.on("chat_message", ({ from, to, text }) => {
-    console.log(`💬 ${from} -> ${to}:`, text);
-
+  // TYPING
+  socket.on("typing", ({ from, to }) => {
     const target = users[to];
+    if (target) {
+      io.to(target).emit("typing", { from });
+    }
+  });
 
-    const payload = { from, to, text };
+  // CHAT MESSAGE
+  socket.on("chat_message", (data) => {
+    const payload = {
+      from: data.from,
+      to: data.to,
+      text: data.text,
+      time: Date.now()
+    };
 
-    // naar ontvanger
-    if (target) io.to(target).emit("chat_message", payload);
+    messageBuffer.push(payload);
+    trimBuffer();
 
-    // terug naar verzender
+    const target = users[data.to];
+
+    if (target) {
+      io.to(target).emit("chat_message", payload);
+    }
+
     socket.emit("chat_message", payload);
   });
 
@@ -53,7 +73,6 @@ io.on("connection", (socket) => {
     if (socket.username) {
       delete users[socket.username];
       io.emit("users", Object.keys(users));
-      io.emit("system_message", `${socket.username} is offline`);
     }
   });
 });
