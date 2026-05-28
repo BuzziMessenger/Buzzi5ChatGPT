@@ -1,14 +1,87 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <title>Buzzi Messenger</title>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial;
+      background: #e9f1ff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .box {
+      width: 420px;
+      height: 520px;
+      background: white;
+      border: 1px solid #2b579a;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .header {
+      background: #2b579a;
+      color: white;
+      padding: 10px;
+      font-weight: bold;
+    }
+
+    .chat {
+      flex: 1;
+      padding: 10px;
+      overflow-y: auto;
+    }
+
+    .msg {
+      margin: 6px 0;
+    }
+
+    .me { color: blue; }
+    .bot { color: green; }
+
+    .input {
+      display: flex;
+      border-top: 1px solid #ccc;
+    }
+
+    .input input {
+      flex: 1;
+      padding: 10px;
+      border: none;
+      outline: none;
+    }
+
+    .input button {
+      padding: 10px;
+      background: #2b579a;
+      color: white;
+      border: none;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="box">
+  <div class="header">💬 Buzzi Messenger</div>
+
+  <div id="chat" class="chat"></div>
+
+  <div class="input">
+    <input id="text" placeholder="Typ bericht..." />
+    <button onclick="send()">Send</button>
+  </div>
+</div>
+
 <script>
-function addMsg(text, type) {
+function add(text, type) {
   const chat = document.getElementById("chat");
-
-  chat.innerHTML += `
-    <div class="msg ${type}">
-      ${text}
-      <div class="time">${new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div>
-    </div>
-  `;
-
+  chat.innerHTML += `<div class="msg ${type}">${text}</div>`;
   chat.scrollTop = chat.scrollHeight;
 }
 
@@ -17,7 +90,7 @@ async function send() {
   const msg = input.value.trim();
   if (!msg) return;
 
-  addMsg("Jij: " + msg, "me");
+  add("Jij: " + msg, "me");
   input.value = "";
 
   try {
@@ -28,10 +101,13 @@ async function send() {
     });
 
     const data = await res.json();
-    addMsg("Bot: " + data.reply, "bot");
+    add("Bot: " + data.reply, "bot");
 
   } catch (e) {
-    addMsg("❌ Server error", "bot");
+    add("❌ Server error", "bot");
   }
 }
 </script>
+
+</body>
+</html>
