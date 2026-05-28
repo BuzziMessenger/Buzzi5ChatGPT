@@ -1,14 +1,14 @@
 <!DOCTYPE html>
 <html lang="nl">
 <head>
-<meta charset="UTF-8" />
-<title>Buzzi MSN Clone</title>
+<meta charset="UTF-8">
+<title>MSN Clone</title>
 
 <style>
 body {
   margin: 0;
   font-family: Tahoma;
-  background: linear-gradient(#cfe3ff, #ffffff);
+  background: #cfe3ff;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -17,35 +17,25 @@ body {
 
 .app {
   display: flex;
-  width: 750px;
-  height: 560px;
-  border: 1px solid #2b579a;
+  width: 700px;
+  height: 550px;
   background: white;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+  border: 1px solid #2b579a;
 }
 
 .sidebar {
-  width: 220px;
+  width: 200px;
   background: #eaf3ff;
-  border-right: 1px solid #2b579a;
   padding: 10px;
-}
-
-.me {
-  font-weight: bold;
-  margin-bottom: 10px;
+  border-right: 1px solid #2b579a;
 }
 
 .contact {
   padding: 6px;
-  margin: 5px 0;
   background: white;
+  margin-bottom: 6px;
   border: 1px solid #ccc;
   cursor: pointer;
-}
-
-.contact:hover {
-  background: #d7ebff;
 }
 
 .chatbox {
@@ -58,7 +48,6 @@ body {
   background: #2b579a;
   color: white;
   padding: 10px;
-  font-weight: bold;
 }
 
 .chat {
@@ -70,17 +59,17 @@ body {
 
 .msg {
   margin: 5px 0;
-  padding: 6px 10px;
-  border-radius: 6px;
+  padding: 6px;
+  border-radius: 5px;
   max-width: 70%;
 }
 
-.meMsg {
+.me {
   background: #d7ebff;
   margin-left: auto;
 }
 
-.otherMsg {
+.other {
   background: #eee;
   margin-right: auto;
 }
@@ -110,21 +99,18 @@ button {
 <div class="app">
 
   <div class="sidebar">
-    <div class="me" id="me">👤 ...</div>
+    <div id="me"></div>
     <div id="users"></div>
   </div>
 
   <div class="chatbox">
-
-    <div class="header" id="header">💬 Geen chat geselecteerd</div>
-
+    <div class="header" id="header">Select chat</div>
     <div id="chat" class="chat"></div>
 
     <div class="input">
       <input id="text" placeholder="Typ..." />
       <button onclick="send()">Send</button>
     </div>
-
   </div>
 
 </div>
@@ -134,75 +120,66 @@ button {
 <script>
 const socket = io("https://buzzimessenger.onrender.com");
 
-let me = prompt("Kies username:");
+let me = prompt("Username:");
 document.getElementById("me").innerText = "👤 " + me;
 
 socket.emit("register", me);
 
-let currentChat = null;
+let current = null;
 let chats = {};
 
-// USERS LIST
+// USERS
 socket.on("users", (list) => {
-  const usersDiv = document.getElementById("users");
-  usersDiv.innerHTML = "";
+  const box = document.getElementById("users");
+  box.innerHTML = "";
 
   list.forEach(u => {
     if (u === me) return;
 
     const div = document.createElement("div");
     div.className = "contact";
-    div.innerText = "🟢 " + u;
+    div.innerText = u;
 
-    div.onclick = () => openChat(u);
+    div.onclick = () => {
+      current = u;
+      document.getElementById("header").innerText = "Chat met " + u;
 
-    usersDiv.appendChild(div);
+      if (!chats[u]) chats[u] = [];
+      render();
+    };
+
+    box.appendChild(div);
   });
 });
-
-function openChat(user) {
-  currentChat = user;
-  document.getElementById("header").innerText = "💬 Chat met " + user;
-
-  if (!chats[user]) chats[user] = [];
-
-  render();
-}
 
 function render() {
   const chat = document.getElementById("chat");
   chat.innerHTML = "";
 
-  if (!currentChat) return;
+  if (!current) return;
 
-  chats[currentChat].forEach(m => {
-    chat.innerHTML += `
-      <div class="msg ${m.type}">
-        ${m.text}
-      </div>
-    `;
+  chats[current].forEach(m => {
+    chat.innerHTML += `<div class="msg ${m.type}">${m.text}</div>`;
   });
 
   chat.scrollTop = chat.scrollHeight;
 }
 
+// SEND
 function send() {
   const input = document.getElementById("text");
   const msg = input.value.trim();
-  if (!msg || !currentChat) return;
 
-  if (!chats[currentChat]) chats[currentChat] = [];
+  if (!msg || !current) return;
 
-  chats[currentChat].push({
-    text: "Jij: " + msg,
-    type: "meMsg"
-  });
+  if (!chats[current]) chats[current] = [];
 
+  chats[current].push({ text: "Jij: " + msg, type: "me" });
   render();
 
   socket.emit("private_message", {
     from: me,
-    to: currentChat,
+    to: current,
     text: msg
   });
 
@@ -211,17 +188,14 @@ function send() {
 
 // RECEIVE
 socket.on("private_message", (data) => {
-
   if (!chats[data.from]) chats[data.from] = [];
 
   chats[data.from].push({
     text: data.from + ": " + data.text,
-    type: "otherMsg"
+    type: "other"
   });
 
-  if (currentChat === data.from) {
-    render();
-  }
+  if (current === data.from) render();
 });
 </script>
 
