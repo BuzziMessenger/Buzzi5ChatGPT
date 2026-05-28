@@ -1,52 +1,26 @@
 const express = require("express");
-const cors = require("cors");
 const http = require("http");
 const { Server } = require("socket.io");
 
 const app = express();
-app.use(cors());
-
 const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: { origin: "*" }
 });
 
-const users = {};
-
 io.on("connection", (socket) => {
 
-  socket.on("register", (username) => {
-    users[username] = socket.id;
-    socket.username = username;
+  console.log("USER CONNECTED:", socket.id);
 
-    io.emit("users", Object.keys(users));
-    console.log("User online:", username);
-  });
+  socket.on("test_message", (data) => {
+    console.log("RECEIVED:", data);
 
-  socket.on("private_message", (data) => {
-    const { from, to, text } = data;
-
-    console.log("MSG:", from, "->", to, text);
-
-    const target = users[to];
-
-    if (target) {
-      io.to(target).emit("private_message", { from, text });
-    }
-
-    socket.emit("private_message", { from, text });
-  });
-
-  socket.on("disconnect", () => {
-    if (socket.username) {
-      delete users[socket.username];
-      io.emit("users", Object.keys(users));
-    }
+    socket.emit("test_message", data);
   });
 
 });
 
 server.listen(process.env.PORT || 3000, () => {
-  console.log("Server running");
+  console.log("TEST SERVER RUNNING");
 });
