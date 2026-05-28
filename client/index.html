@@ -1,133 +1,118 @@
 <!DOCTYPE html>
 <html lang="nl">
 <head>
-  <meta charset="UTF-8" />
-  <title>Buzzi Messenger</title>
+<meta charset="UTF-8" />
+<title>Buzzi MSN Clone</title>
 
-  <style>
-    body {
-      margin: 0;
-      font-family: Tahoma;
-      background: linear-gradient(#cfe3ff, #ffffff);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-    }
+<style>
+body {
+  margin: 0;
+  font-family: Tahoma;
+  background: linear-gradient(#cfe3ff, #ffffff);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
 
-    .app {
-      display: flex;
-      width: 720px;
-      height: 560px;
-      border: 1px solid #2b579a;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-      background: white;
-    }
+.app {
+  display: flex;
+  width: 750px;
+  height: 560px;
+  border: 1px solid #2b579a;
+  background: white;
+}
 
-    .contacts {
-      width: 200px;
-      background: #eaf3ff;
-      border-right: 1px solid #2b579a;
-      padding: 10px;
-    }
+.sidebar {
+  width: 220px;
+  background: #eaf3ff;
+  border-right: 1px solid #2b579a;
+  padding: 10px;
+}
 
-    .contact {
-      padding: 8px;
-      margin-bottom: 6px;
-      background: white;
-      border: 1px solid #ccc;
-      cursor: pointer;
-    }
+.user {
+  font-weight: bold;
+  margin-bottom: 10px;
+}
 
-    .contact:hover {
-      background: #d7ebff;
-    }
+.contact {
+  padding: 6px;
+  margin: 5px 0;
+  background: white;
+  border: 1px solid #ccc;
+  cursor: pointer;
+}
 
-    .chatbox {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-    }
+.contact:hover {
+  background: #d7ebff;
+}
 
-    .header {
-      background: #2b579a;
-      color: white;
-      padding: 10px;
-      font-weight: bold;
-    }
+.chatbox {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
 
-    .chat {
-      flex: 1;
-      padding: 10px;
-      overflow-y: auto;
-      background: #f9fbff;
-    }
+.header {
+  background: #2b579a;
+  color: white;
+  padding: 10px;
+}
 
-    .msg {
-      margin: 6px 0;
-      padding: 6px 10px;
-      border-radius: 8px;
-      max-width: 75%;
-      font-size: 14px;
-    }
+.chat {
+  flex: 1;
+  padding: 10px;
+  overflow-y: auto;
+  background: #f9fbff;
+}
 
-    .me {
-      background: #d7ebff;
-      margin-left: auto;
-    }
+.msg {
+  margin: 5px 0;
+  padding: 6px 10px;
+  border-radius: 6px;
+  max-width: 70%;
+}
 
-    .other {
-      background: #eeeeee;
-      margin-right: auto;
-    }
+.me { background: #d7ebff; margin-left: auto; }
+.other { background: #eee; margin-right: auto; }
 
-    .input {
-      display: flex;
-      border-top: 1px solid #ccc;
-    }
+.input {
+  display: flex;
+  border-top: 1px solid #ccc;
+}
 
-    .input input {
-      flex: 1;
-      padding: 10px;
-      border: none;
-      outline: none;
-    }
+input {
+  flex: 1;
+  padding: 10px;
+  border: none;
+}
 
-    .input button {
-      background: #2b579a;
-      color: white;
-      border: none;
-      padding: 10px 15px;
-      cursor: pointer;
-    }
-  </style>
+button {
+  padding: 10px;
+  background: #2b579a;
+  color: white;
+  border: none;
+}
+</style>
 </head>
 
 <body>
 
 <div class="app">
 
-  <!-- CONTACT LIST -->
-  <div class="contacts">
-    <h4>Contacten</h4>
-
-    <div class="contact" onclick="selectUser('Friend 1')">🟢 Friend 1</div>
-    <div class="contact" onclick="selectUser('Friend 2')">🟢 Friend 2</div>
-    <div class="contact" onclick="selectUser('Friend 3')">🟡 Friend 3</div>
+  <div class="sidebar">
+    <div class="user" id="me">👤 ...</div>
+    <div id="users"></div>
   </div>
 
-  <!-- CHAT -->
   <div class="chatbox">
-
-    <div class="header" id="header">💬 Geen chat geselecteerd</div>
-
+    <div class="header" id="chatWith">💬 Geen chat</div>
     <div id="chat" class="chat"></div>
 
     <div class="input">
-      <input id="text" placeholder="Typ bericht..." />
+      <input id="text" placeholder="Typ..." />
       <button onclick="send()">Send</button>
     </div>
-
   </div>
 
 </div>
@@ -137,30 +122,49 @@
 <script>
 const socket = io("https://buzzimessenger.onrender.com");
 
-let currentUser = null;
-let chats = {}; // opslag per contact
+let me = prompt("Kies je username:");
+document.getElementById("me").innerText = "👤 " + me;
 
-function selectUser(name) {
-  currentUser = name;
-  document.getElementById("header").innerText = "💬 Chat met " + name;
+socket.emit("register", me);
 
-  if (!chats[name]) chats[name] = [];
+let currentChat = null;
+let chats = {};
 
-  renderChat();
+// USERS LIST
+socket.on("users", (list) => {
+  const usersDiv = document.getElementById("users");
+  usersDiv.innerHTML = "";
+
+  list.forEach(u => {
+    if (u === me) return;
+
+    const div = document.createElement("div");
+    div.className = "contact";
+    div.innerText = "🟢 " + u;
+
+    div.onclick = () => openChat(u);
+
+    usersDiv.appendChild(div);
+  });
+});
+
+function openChat(user) {
+  currentChat = user;
+  document.getElementById("chatWith").innerText = "💬 Chat met " + user;
+
+  if (!chats[user]) chats[user] = [];
+
+  render();
 }
 
-function renderChat() {
+function render() {
   const chat = document.getElementById("chat");
   chat.innerHTML = "";
 
-  if (!currentUser) return;
+  if (!currentChat) return;
 
-  chats[currentUser].forEach(m => {
-    chat.innerHTML += `
-      <div class="msg ${m.type}">
-        ${m.text}
-      </div>
-    `;
+  chats[currentChat].forEach(m => {
+    chat.innerHTML += `<div class="msg ${m.type}">${m.text}</div>`;
   });
 
   chat.scrollTop = chat.scrollHeight;
@@ -169,23 +173,23 @@ function renderChat() {
 function send() {
   const input = document.getElementById("text");
   const msg = input.value.trim();
-  if (!msg || !currentUser) return;
+  if (!msg || !currentChat) return;
 
-  if (!chats[currentUser]) chats[currentUser] = [];
+  if (!chats[currentChat]) chats[currentChat] = [];
 
-  chats[currentUser].push({ text: "Jij: " + msg, type: "me" });
-  renderChat();
+  chats[currentChat].push({ text: "Jij: " + msg, type: "me" });
+  render();
 
   socket.emit("private_message", {
-    to: currentUser,
-    from: "Robbin",
+    from: me,
+    to: currentChat,
     text: msg
   });
 
   input.value = "";
 }
 
-/* RECEIVE PRIVATE MESSAGE */
+// RECEIVE MESSAGE
 socket.on("private_message", (data) => {
 
   if (!chats[data.from]) chats[data.from] = [];
@@ -195,8 +199,8 @@ socket.on("private_message", (data) => {
     type: "other"
   });
 
-  if (currentUser === data.from) {
-    renderChat();
+  if (currentChat === data.from) {
+    render();
   }
 });
 </script>
