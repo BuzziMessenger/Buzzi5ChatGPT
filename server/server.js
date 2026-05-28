@@ -12,41 +12,45 @@ const io = new Server(server, {
   cors: { origin: "*" }
 });
 
+// username -> socket.id
 const users = {};
 
-function emitUsers() {
-  io.emit("users", Object.keys(users));
-}
-
 io.on("connection", (socket) => {
+  console.log("connected:", socket.id);
 
+  // login/register
   socket.on("register", (username) => {
     if (!username) return;
 
-    users[username] = socket.id;
     socket.username = username;
+    users[username] = socket.id;
 
-    emitUsers();
+    console.log("REGISTER:", username);
+    io.emit("users", Object.keys(users));
   });
 
+  // private chat
   socket.on("private_message", ({ from, to, text }) => {
+    console.log("MSG:", from, "->", to, text);
 
-    const target = users[to];
+    const targetId = users[to];
 
-    if (target) {
-      io.to(target).emit("private_message", { from, text });
+    if (targetId) {
+      io.to(targetId).emit("private_message", { from, text });
     }
 
     socket.emit("private_message", { from, text });
   });
 
+  // disconnect
   socket.on("disconnect", () => {
     if (socket.username) {
       delete users[socket.username];
-      emitUsers();
+      io.emit("users", Object.keys(users));
     }
   });
-
 });
 
-server.listen(process.env.PORT || 3000);
+server.listen(process.env.PORT || 3000, () => {
+  console.log("Server running");
+});

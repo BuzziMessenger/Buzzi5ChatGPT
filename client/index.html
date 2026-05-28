@@ -2,7 +2,7 @@
 <html lang="nl">
 <head>
 <meta charset="UTF-8">
-<title>MSN Stable</title>
+<title>Buzzi MSN Clone</title>
 
 <style>
 body {
@@ -17,7 +17,7 @@ body {
 
 .app {
   display: flex;
-  width: 720px;
+  width: 750px;
   height: 560px;
   background: white;
   border: 1px solid #2b579a;
@@ -60,10 +60,18 @@ body {
 .msg {
   margin: 5px 0;
   padding: 6px;
+  border-radius: 4px;
 }
 
-.me { background: #d7ebff; margin-left: auto; }
-.other { background: #eee; margin-right: auto; }
+.me {
+  background: #d7ebff;
+  margin-left: auto;
+}
+
+.other {
+  background: #eee;
+  margin-right: auto;
+}
 
 .input {
   display: flex;
@@ -113,19 +121,16 @@ button {
 const socket = io("https://buzzimessenger.onrender.com");
 
 let me = prompt("Username:");
+let currentChat = null;
+let chats = {};
+
+// login
 socket.emit("register", me);
 
-let currentChat = null;
-let chats = {}; // BELANGRIJK: blijft altijd bestaan
-
-// USERS (BELANGRIJK: alleen UI rebuild, NIET state reset)
+// USERS LIST
 socket.on("users", (list) => {
-
   const box = document.querySelector(".left");
-
-  // alleen contact container leegmaken, NIET hele header weggooien
-  const oldContacts = box.querySelectorAll(".contact");
-  oldContacts.forEach(c => c.remove());
+  box.innerHTML = "<h4>Contacts</h4>";
 
   list.forEach(u => {
     if (u === me) return;
@@ -134,20 +139,11 @@ socket.on("users", (list) => {
     div.className = "contact";
     div.innerText = u;
 
-    div.dataset.user = u;
+    div.onclick = () => {
+      currentChat = u;
+      document.getElementById("header").innerText = "Chat met " + u;
 
-    div.onclick = function () {
-      console.log("CLICK:", this.dataset.user);
-
-      currentChat = this.dataset.user;
-
-      document.getElementById("header").innerText =
-        "Chat met " + currentChat;
-
-      if (!chats[currentChat]) {
-        chats[currentChat] = [];
-      }
-
+      if (!chats[u]) chats[u] = [];
       render();
     };
 
@@ -155,6 +151,7 @@ socket.on("users", (list) => {
   });
 });
 
+// RENDER CHAT
 function render() {
   const chat = document.getElementById("chat");
   chat.innerHTML = "";
@@ -171,18 +168,12 @@ function render() {
   chat.scrollTop = chat.scrollHeight;
 }
 
+// SEND MESSAGE
 function send() {
   const input = document.getElementById("text");
   const msg = input.value.trim();
 
-  console.log("SEND TRIGGERED", msg, currentChat);
-
-  if (!msg) return;
-
-  if (!currentChat) {
-    alert("Geen contact geselecteerd");
-    return;
-  }
+  if (!msg || !currentChat) return;
 
   chats[currentChat].push({
     text: "Jij: " + msg,
@@ -200,8 +191,8 @@ function send() {
   input.value = "";
 }
 
+// RECEIVE MESSAGE
 socket.on("private_message", (data) => {
-
   if (!chats[data.from]) chats[data.from] = [];
 
   chats[data.from].push({
