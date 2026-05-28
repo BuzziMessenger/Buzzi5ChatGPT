@@ -132,13 +132,18 @@ socket.on("users", (list) => {
     div.innerText = u;
 
     div.onclick = () => {
-      currentChat = u;
-      document.getElementById("header").innerText = "Chat met " + u;
+  console.log("CLICK CONTACT:", u);
 
-      if (!chats[u]) chats[u] = [];
+  currentChat = u;
 
-      render();
-    };
+  document.getElementById("header").innerText = "Chat met " + u;
+
+  if (!chats[u]) chats[u] = [];
+
+  console.log("CURRENT CHAT SET TO:", currentChat);
+
+  render();
+};
 
     box.appendChild(div);
   });
@@ -164,7 +169,14 @@ function send() {
   const input = document.getElementById("text");
   const msg = input.value.trim();
 
-  if (!msg || !currentChat) return;
+  console.log("SEND TRIGGERED", msg, currentChat);
+
+  if (!msg) return;
+
+  if (!currentChat) {
+    alert("Geen contact geselecteerd");
+    return;
+  }
 
   chats[currentChat].push({
     text: "Jij: " + msg,
