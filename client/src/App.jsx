@@ -8,6 +8,7 @@ export default function App() {
       <div className="sidebar">
         <div className="profile-box">
           <div className="avatar"></div>
+            console.log(socket.connected)
 
           <h2>Robbin</h2>
 
