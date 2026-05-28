@@ -9,10 +9,13 @@ app.use(cors());
 const server = http.createServer(app);
 
 const io = new Server(server, {
-  cors: { origin: "*" }
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"]
+  }
 });
 
-console.log("🔥 MSN v6 FULL SYSTEM LOADED");
+console.log("🔥 MSN STABLE SERVER RUNNING");
 
 const users = {};
 const messages = {};
@@ -25,49 +28,38 @@ function pushMessage(a, b, msg) {
   const key = roomKey(a, b);
   if (!messages[key]) messages[key] = [];
   messages[key].push(msg);
-  if (messages[key].length > 150) messages[key].shift();
+
+  if (messages[key].length > 200) {
+    messages[key].shift();
+  }
 }
 
 function broadcastUsers() {
   io.emit("users", users);
 }
 
-/* DEFAULT AVATARS */
-const defaultAvatars = [
-  "https://api.dicebear.com/7.x/pixel-art/svg?seed=msn1",
-  "https://api.dicebear.com/7.x/pixel-art/svg?seed=msn2",
-  "https://api.dicebear.com/7.x/pixel-art/svg?seed=msn3",
-  "https://api.dicebear.com/7.x/pixel-art/svg?seed=msn4"
-];
-
-function randomAvatar() {
-  return defaultAvatars[Math.floor(Math.random() * defaultAvatars.length)];
-}
-
 io.on("connection", (socket) => {
 
+  console.log("🟢 CONNECT:", socket.id);
+
+  // REGISTER
   socket.on("register", (username) => {
     if (!username) return;
 
     socket.username = username;
 
-    if (!users[username]) {
-      users[username] = {
-        id: socket.id,
-        status: "online",
-        text: "Available",
-        avatar: randomAvatar(),
-        lastSeen: Date.now()
-      };
-    } else {
-      users[username].id = socket.id;
-      users[username].status = "online";
-    }
+    users[username] = {
+      id: socket.id,
+      status: "online",
+      text: "Available",
+      avatar: `https://api.dicebear.com/7.x/pixel-art/svg?seed=${username}`,
+      lastSeen: Date.now()
+    };
 
     broadcastUsers();
   });
 
-  /* STATUS TEXT */
+  // STATUS TEXT
   socket.on("set_status_text", ({ user, text }) => {
     if (users[user]) {
       users[user].text = text;
@@ -75,7 +67,7 @@ io.on("connection", (socket) => {
     }
   });
 
-  /* CHAT */
+  // CHAT
   socket.on("chat_message", (data) => {
     const msg = {
       from: data.from,
@@ -95,19 +87,20 @@ io.on("connection", (socket) => {
     socket.emit("chat_message", msg);
   });
 
-  /* HISTORY */
+  // HISTORY
   socket.on("get_history", ({ userA, userB }) => {
     socket.emit("history", messages[roomKey(userA, userB)] || []);
   });
 
-  /* TYPING */
+  // TYPING
   socket.on("typing", ({ from, to }) => {
-    if (users[to]) {
-      io.to(users[to].id).emit("typing", { from });
+    const target = users[to];
+    if (target) {
+      io.to(target.id).emit("typing", { from });
     }
   });
 
-  /* DISCONNECT */
+  // DISCONNECT
   socket.on("disconnect", () => {
     if (!socket.username) return;
 
@@ -121,5 +114,5 @@ io.on("connection", (socket) => {
 });
 
 server.listen(process.env.PORT || 3000, () => {
-  console.log("🚀 RUNNING");
+  console.log("🚀 READY");
 });

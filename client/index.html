@@ -2,28 +2,28 @@
 <html lang="nl">
 <head>
 <meta charset="UTF-8">
-<title>MSN v6</title>
+<title>MSN Stable v1</title>
 
 <style>
 body {
   margin: 0;
   font-family: Tahoma;
   background: #cfe3ff;
+  height: 100vh;
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 100vh;
 }
 
 .app {
-  width: 920px;
+  width: 900px;
   height: 650px;
   display: flex;
   background: white;
   border: 1px solid #2b579a;
 }
 
-/* CONTACTS */
+/* LEFT */
 .left {
   width: 280px;
   background: #eaf3ff;
@@ -49,15 +49,7 @@ body {
   border-radius: 6px;
 }
 
-.small {
-  font-size: 11px;
-  color: gray;
-}
-
-.online { color: green; }
-.offline { color: gray; }
-
-/* CHAT */
+/* RIGHT */
 .right {
   flex: 1;
   display: flex;
@@ -81,7 +73,6 @@ body {
   margin: 6px 0;
   padding: 7px;
   max-width: 70%;
-  border-radius: 4px;
 }
 
 .me {
@@ -120,9 +111,14 @@ button {
   border-bottom: 1px solid #ccc;
 }
 
-/* EMOJI */
-.emoji {
-  cursor: pointer;
+/* DEBUG */
+#debug {
+  position: fixed;
+  bottom: 10px;
+  left: 10px;
+  background: black;
+  color: lime;
+  font-size: 12px;
   padding: 5px;
 }
 </style>
@@ -147,11 +143,7 @@ button {
     </div>
 
     <div class="chat" id="chat"></div>
-    <div class="typing" id="typing"></div>
-
-    <div style="padding:5px;">
-      😀 😃 😄 😁 😂 ❤️ 👍
-    </div>
+    <div id="typing"></div>
 
     <div class="input">
       <input id="input" placeholder="Typ..." />
@@ -162,28 +154,30 @@ button {
 
 </div>
 
+<div id="debug">STATUS: LOADING...</div>
+
 <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 
 <script>
-const socket = io("https://buzzimessenger.onrender.com");
+const socket = io("https://buzzimessenger.onrender.com", {
+  transports: ["websocket", "polling"],
+  reconnection: true
+});
 
 let me = null;
 let active = null;
 let chats = {};
 
-/* EMOJI REPLACER */
-function parseEmojis(text) {
-  return text
-    .replaceAll(":)", "😊")
-    .replaceAll(":(", "😢")
-    .replaceAll("<3", "❤️")
-    .replaceAll(":D", "😄")
-    .replaceAll(":p", "😛");
-}
-
+/* DEBUG */
 socket.on("connect", () => {
+  document.getElementById("debug").innerText = "STATUS: CONNECTED";
+
   me = prompt("Username:");
   socket.emit("register", me);
+});
+
+socket.on("disconnect", () => {
+  document.getElementById("debug").innerText = "STATUS: DISCONNECTED";
 });
 
 /* USERS */
@@ -201,17 +195,18 @@ socket.on("users", (users) => {
       <img class="avatar" src="${data.avatar}" />
       <div>
         <b>${name}</b><br>
-        <span class="${data.status === "online" ? "online" : "offline"}">
-          ${data.status}
-        </span><br>
-        <span class="small">${data.text}</span>
+        <small>${data.status} - ${data.text}</small>
       </div>
     `;
 
     div.onclick = () => {
       active = name;
       document.getElementById("header").innerText = "Chat met " + name;
-      socket.emit("get_history", { userA: me, userB: name });
+
+      socket.emit("get_history", {
+        userA: me,
+        userB: name
+      });
     };
 
     box.appendChild(div);
@@ -239,6 +234,7 @@ socket.on("typing", (d) => {
   if (d.from === active) {
     document.getElementById("typing").innerText =
       d.from + " is typing...";
+
     setTimeout(() => {
       document.getElementById("typing").innerText = "";
     }, 800);
@@ -248,11 +244,9 @@ socket.on("typing", (d) => {
 /* SEND */
 function send() {
   const input = document.getElementById("input");
-  let text = input.value.trim();
+  const text = input.value.trim();
 
   if (!text || !active) return;
-
-  text = parseEmojis(text);
 
   socket.emit("chat_message", {
     from: me,
