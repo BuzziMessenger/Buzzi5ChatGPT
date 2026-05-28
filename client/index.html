@@ -2,71 +2,195 @@
 <html lang="nl">
 <head>
 <meta charset="UTF-8">
-<title>MSN Safe Mode</title>
+<title>MSN Clone</title>
 
 <style>
 body {
+  margin: 0;
   font-family: Tahoma;
   background: #cfe3ff;
   display: flex;
   justify-content: center;
-  padding-top: 50px;
+  align-items: center;
+  height: 100vh;
 }
 
-.box {
-  width: 600px;
-  height: 400px;
+.app {
+  display: flex;
+  width: 720px;
+  height: 560px;
   background: white;
   border: 1px solid #2b579a;
-  display: flex;
 }
 
 .left {
-  width: 200px;
+  width: 220px;
   background: #eaf3ff;
   border-right: 1px solid #2b579a;
   padding: 10px;
 }
 
+.contact {
+  padding: 6px;
+  background: white;
+  margin-bottom: 6px;
+  border: 1px solid #ccc;
+  cursor: pointer;
+}
+
 .right {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  background: #2b579a;
+  color: white;
   padding: 10px;
 }
 
-.contact {
-  padding: 5px;
-  background: white;
-  border: 1px solid #ccc;
-  margin-bottom: 5px;
-  cursor: pointer;
+.chat {
+  flex: 1;
+  padding: 10px;
+  overflow-y: auto;
+  background: #f9fbff;
+}
+
+.msg {
+  margin: 5px 0;
+  padding: 6px;
+  border-radius: 6px;
+  max-width: 70%;
+}
+
+.me { background: #d7ebff; margin-left: auto; }
+.other { background: #eee; margin-right: auto; }
+
+.input {
+  display: flex;
+  border-top: 1px solid #ccc;
+}
+
+input {
+  flex: 1;
+  padding: 10px;
+  border: none;
+}
+
+button {
+  padding: 10px;
+  background: #2b579a;
+  color: white;
+  border: none;
 }
 </style>
 </head>
 
 <body>
 
-<div class="box">
+<div class="app">
+
   <div class="left">
     <h4>Contacts</h4>
-    <div class="contact">Friend 1</div>
-    <div class="contact">Friend 2</div>
-    <div class="contact">Friend 3</div>
   </div>
 
   <div class="right">
-    <h3>MSN werkt weer 👍</h3>
-    <p>Als je dit ziet, is je frontend OK.</p>
+
+    <div class="header" id="header">MSN Chat</div>
+
+    <div id="chat" class="chat"></div>
+
+    <div class="input">
+      <input id="text" placeholder="Typ..." />
+      <button onclick="send()">Send</button>
+    </div>
+
   </div>
+
 </div>
+
 <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 
 <script>
 const socket = io("https://buzzimessenger.onrender.com");
 
-socket.on("connect", () => {
-  console.log("CONNECTED:", socket.id);
-  alert("Socket connected 👍");
+let me = prompt("Username:");
+let current = null;
+let chats = {};
+
+socket.emit("register", me);
+
+// USERS
+socket.on("users", (list) => {
+  const box = document.querySelector(".left");
+  box.innerHTML = "<h4>Contacts</h4>";
+
+  list.forEach(u => {
+    if (u === me) return;
+
+    const div = document.createElement("div");
+    div.className = "contact";
+    div.innerText = u;
+
+    div.onclick = () => {
+      current = u;
+      document.getElementById("header").innerText = "Chat met " + u;
+
+      if (!chats[u]) chats[u] = [];
+      render();
+    };
+
+    box.appendChild(div);
+  });
+});
+
+function render() {
+  const chat = document.getElementById("chat");
+  chat.innerHTML = "";
+
+  if (!current) return;
+
+  chats[current].forEach(m => {
+    chat.innerHTML += `<div class="msg ${m.type}">${m.text}</div>`;
+  });
+
+  chat.scrollTop = chat.scrollHeight;
+}
+
+// SEND
+function send() {
+  const input = document.getElementById("text");
+  const msg = input.value.trim();
+
+  if (!msg || !current) return;
+
+  if (!chats[current]) chats[current] = [];
+
+  chats[current].push({ text: "Jij: " + msg, type: "me" });
+  render();
+
+  socket.emit("private_message", {
+    from: me,
+    to: current,
+    text: msg
+  });
+
+  input.value = "";
+}
+
+// RECEIVE
+socket.on("private_message", (data) => {
+  if (!chats[data.from]) chats[data.from] = [];
+
+  chats[data.from].push({
+    text: data.from + ": " + data.text,
+    type: "other"
+  });
+
+  if (current === data.from) render();
 });
 </script>
+
 </body>
 </html>
