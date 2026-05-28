@@ -2,7 +2,7 @@
 <html lang="nl">
 <head>
 <meta charset="UTF-8">
-<title>MSN v6.1</title>
+<title>MSN v6.2</title>
 
 <style>
 body {
@@ -23,7 +23,7 @@ body {
   border: 1px solid #2b579a;
 }
 
-/* LEFT */
+/* CONTACTS */
 .left {
   width: 280px;
   background: #eaf3ff;
@@ -49,7 +49,7 @@ body {
   border-radius: 6px;
 }
 
-/* RIGHT */
+/* CHAT */
 .right {
   flex: 1;
   display: flex;
@@ -138,7 +138,7 @@ button {
     <div class="header" id="header">Select chat</div>
 
     <div class="statusbar">
-      <input id="statusText" placeholder="Away for lunch..." />
+      <input id="statusText" placeholder="Set status..." />
       <button onclick="setStatus()">Set</button>
     </div>
 
@@ -175,10 +175,6 @@ socket.on("connect", () => {
   socket.emit("register", me);
 });
 
-socket.on("disconnect", () => {
-  document.getElementById("debug").innerText = "STATUS: DISCONNECTED";
-});
-
 /* USERS */
 socket.on("users", (users) => {
   const box = document.getElementById("users");
@@ -200,7 +196,9 @@ socket.on("users", (users) => {
 
     div.onclick = () => {
       active = name;
-      document.getElementById("header").innerText = "Chat met " + name;
+
+      document.getElementById("header").innerText =
+        "Chat met " + name;
 
       socket.emit("get_history", {
         userA: me,
@@ -215,6 +213,7 @@ socket.on("users", (users) => {
 /* HISTORY */
 socket.on("history", (msgs) => {
   if (!active) return;
+
   chats[active] = msgs;
   render();
 });
@@ -264,16 +263,6 @@ function setStatus() {
     text: document.getElementById("statusText").value
   });
 }
-
-/* TYPING */
-document.getElementById("input").addEventListener("input", () => {
-  if (!active) return;
-
-  socket.emit("typing", {
-    from: me,
-    to: active
-  });
-});
 
 /* RENDER */
 function render() {

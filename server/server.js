@@ -12,7 +12,7 @@ const io = new Server(server, {
   cors: { origin: "*" }
 });
 
-console.log("🔥 MSN v6.1 SERVER RUNNING");
+console.log("🔥 MSN v6.2 FULL STABLE SERVER");
 
 const users = {};
 const messages = {};
@@ -26,7 +26,7 @@ function pushMessage(a, b, msg) {
   if (!messages[key]) messages[key] = [];
   messages[key].push(msg);
 
-  if (messages[key].length > 200) {
+  if (messages[key].length > 300) {
     messages[key].shift();
   }
 }
