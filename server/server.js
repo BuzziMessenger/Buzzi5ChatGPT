@@ -12,43 +12,58 @@ const io = new Server(server, {
   cors: { origin: "*" }
 });
 
-console.log("🔥 MSN v3 SERVER LOADED");
+console.log("🔥 MSN v4 SERVER LOADED");
 
-const users = {};
-const messageBuffer = []; // laatste 50 messages
+const users = {}; // username -> { id, status, lastSeen }
+
+const messageBuffer = [];
 
 function trimBuffer() {
-  if (messageBuffer.length > 50) {
-    messageBuffer.splice(0, messageBuffer.length - 50);
+  if (messageBuffer.length > 80) {
+    messageBuffer.splice(0, messageBuffer.length - 80);
   }
 }
 
-io.on("connection", (socket) => {
-  console.log("🟢 CONNECTED:", socket.id);
+// STATUS DEFAULT
+function setStatus(username, status) {
+  if (users[username]) {
+    users[username].status = status;
+    users[username].lastSeen = Date.now();
+  }
+  io.emit("users", users);
+}
 
-  // REGISTER
+io.on("connection", (socket) => {
+
+  console.log("🟢 CONNECT:", socket.id);
+
   socket.on("register", (username) => {
     if (!username) return;
 
     socket.username = username;
-    users[username] = socket.id;
 
-    io.emit("users", Object.keys(users));
+    users[username] = {
+      id: socket.id,
+      status: "online",
+      lastSeen: Date.now()
+    };
 
-    // stuur history
-    socket.emit("message_history", messageBuffer);
+    io.emit("users", users);
   });
 
-  // TYPING
+  socket.on("set_status", ({ user, status }) => {
+    setStatus(user, status);
+  });
+
   socket.on("typing", ({ from, to }) => {
     const target = users[to];
     if (target) {
-      io.to(target).emit("typing", { from });
+      io.to(target.id).emit("typing", { from });
     }
   });
 
-  // CHAT MESSAGE
   socket.on("chat_message", (data) => {
+
     const payload = {
       from: data.from,
       to: data.to,
@@ -62,17 +77,19 @@ io.on("connection", (socket) => {
     const target = users[data.to];
 
     if (target) {
-      io.to(target).emit("chat_message", payload);
+      io.to(target.id).emit("chat_message", payload);
     }
 
     socket.emit("chat_message", payload);
   });
 
-  // DISCONNECT
   socket.on("disconnect", () => {
-    if (socket.username) {
-      delete users[socket.username];
-      io.emit("users", Object.keys(users));
+
+    if (socket.username && users[socket.username]) {
+      users[socket.username].status = "offline";
+      users[socket.username].lastSeen = Date.now();
+
+      io.emit("users", users);
     }
   });
 });

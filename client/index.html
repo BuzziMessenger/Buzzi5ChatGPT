@@ -2,7 +2,7 @@
 <html lang="nl">
 <head>
 <meta charset="UTF-8">
-<title>MSN v3</title>
+<title>MSN v4</title>
 
 <style>
 body {
@@ -16,13 +16,14 @@ body {
 }
 
 .app {
-  width: 820px;
-  height: 620px;
+  width: 850px;
+  height: 650px;
   display: flex;
   background: white;
   border: 1px solid #2b579a;
 }
 
+/* LEFT */
 .left {
   width: 260px;
   background: #eaf3ff;
@@ -34,14 +35,28 @@ body {
   padding: 6px;
   margin: 5px 0;
   background: white;
-  cursor: pointer;
   border: 1px solid #ccc;
+  cursor: pointer;
+  position: relative;
 }
 
-.active {
-  background: #d7ebff;
+.status {
+  font-size: 11px;
+  color: gray;
 }
 
+.badge {
+  position: absolute;
+  right: 6px;
+  top: 6px;
+  background: red;
+  color: white;
+  font-size: 10px;
+  padding: 2px 5px;
+  border-radius: 10px;
+}
+
+/* RIGHT */
 .right {
   flex: 1;
   display: flex;
@@ -76,12 +91,6 @@ body {
   background: #eee;
 }
 
-.system {
-  text-align: center;
-  font-size: 12px;
-  color: gray;
-}
-
 .typing {
   font-size: 12px;
   color: gray;
@@ -101,10 +110,22 @@ input {
 
 button {
   padding: 10px;
-  border: none;
   background: #2b579a;
   color: white;
+  border: none;
 }
+
+/* online indicator */
+.dot {
+  height: 8px;
+  width: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 5px;
+}
+
+.online { background: green; }
+.offline { background: gray; }
 </style>
 </head>
 
@@ -113,17 +134,15 @@ button {
 <div class="app">
 
   <div class="left">
-    <h4>Online</h4>
+    <h4>Contacts</h4>
     <div id="users"></div>
   </div>
 
   <div class="right">
 
     <div class="header" id="header">Select chat</div>
-
     <div class="chat" id="chat"></div>
-
-    <div id="typing" class="typing"></div>
+    <div class="typing" id="typing"></div>
 
     <div class="input">
       <input id="input" placeholder="Typ..." />
@@ -142,28 +161,39 @@ const socket = io("https://buzzimessenger.onrender.com");
 let me = prompt("Username:");
 let active = null;
 let chats = {};
+let unread = {};
 
 socket.emit("register", me);
 
 // USERS
-socket.on("users", (list) => {
+socket.on("users", (users) => {
   const box = document.getElementById("users");
   box.innerHTML = "";
 
-  list.forEach(u => {
-    if (u === me) return;
+  Object.entries(users).forEach(([name, data]) => {
+    if (name === me) return;
 
     const div = document.createElement("div");
     div.className = "user";
-    div.innerText = u;
 
-    if (u === active) div.classList.add("active");
+    const badge = unread[name] ? `<div class="badge">${unread[name]}</div>` : "";
+
+    div.innerHTML = `
+      <div>
+        <span class="dot ${data.status === "online" ? "online" : "offline"}"></span>
+        ${name}
+      </div>
+      <div class="status">${data.status}</div>
+      ${badge}
+    `;
 
     div.onclick = () => {
-      active = u;
-      document.getElementById("header").innerText = "Chat met " + u;
+      active = name;
+      unread[name] = 0;
 
-      if (!chats[u]) chats[u] = [];
+      document.getElementById("header").innerText = "Chat met " + name;
+
+      if (!chats[name]) chats[name] = [];
 
       render();
     };
@@ -172,14 +202,24 @@ socket.on("users", (list) => {
   });
 });
 
-// MESSAGE HISTORY
-socket.on("message_history", (msgs) => {
-  msgs.forEach(m => handleMessage(m));
-});
-
-// CHAT MESSAGE
+// MESSAGE
 socket.on("chat_message", (msg) => {
-  handleMessage(msg);
+
+  const other = msg.from === me ? msg.to : msg.from;
+
+  if (!chats[other]) chats[other] = [];
+
+  chats[other].push({
+    text: `${msg.from}: ${msg.text}`,
+    type: msg.from === me ? "me" : "other"
+  });
+
+  if (active !== other) {
+    unread[other] = (unread[other] || 0) + 1;
+    playSound();
+  }
+
+  if (active === other) render();
 });
 
 // TYPING
@@ -193,18 +233,10 @@ socket.on("typing", (data) => {
   }
 });
 
-// HANDLE MESSAGE
-function handleMessage(msg) {
-  const other = msg.from === me ? msg.to : msg.from;
-
-  if (!chats[other]) chats[other] = [];
-
-  chats[other].push({
-    text: `[${new Date(msg.time).toLocaleTimeString()}] ${msg.from}: ${msg.text}`,
-    type: msg.from === me ? "me" : "other"
-  });
-
-  if (active === other) render();
+// SOUND
+function playSound() {
+  const audio = new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg");
+  audio.play();
 }
 
 // SEND
@@ -223,7 +255,7 @@ function send() {
   input.value = "";
 }
 
-// typing event
+// typing emit
 document.getElementById("input").addEventListener("input", () => {
   if (!active) return;
 
@@ -233,14 +265,12 @@ document.getElementById("input").addEventListener("input", () => {
   });
 });
 
-// RENDER
+// render
 function render() {
   const chat = document.getElementById("chat");
   chat.innerHTML = "";
 
-  const msgs = chats[active] || [];
-
-  msgs.forEach(m => {
+  (chats[active] || []).forEach(m => {
     const div = document.createElement("div");
     div.className = "msg " + m.type;
     div.innerText = m.text;
