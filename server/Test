@@ -1,3 +1,7 @@
+
+
+# client/src/styles.css
+
 ```css
 body {
   margin: 0;
@@ -136,3 +140,4 @@ body {
   color: white;
   cursor: pointer;
 }
+```
