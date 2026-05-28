@@ -2,7 +2,7 @@
 <html lang="nl">
 <head>
 <meta charset="UTF-8">
-<title>MSN Stable v1</title>
+<title>MSN v6.1</title>
 
 <style>
 body {
@@ -16,7 +16,7 @@ body {
 }
 
 .app {
-  width: 900px;
+  width: 920px;
   height: 650px;
   display: flex;
   background: white;
@@ -44,8 +44,8 @@ body {
 }
 
 .avatar {
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
   border-radius: 6px;
 }
 
@@ -103,7 +103,7 @@ button {
   border: none;
 }
 
-/* STATUS BAR */
+/* STATUS */
 .statusbar {
   display: flex;
   gap: 5px;
@@ -160,15 +160,14 @@ button {
 
 <script>
 const socket = io("https://buzzimessenger.onrender.com", {
-  transports: ["websocket", "polling"],
-  reconnection: true
+  transports: ["websocket", "polling"]
 });
 
 let me = null;
 let active = null;
 let chats = {};
 
-/* DEBUG */
+/* CONNECT */
 socket.on("connect", () => {
   document.getElementById("debug").innerText = "STATUS: CONNECTED";
 
@@ -215,6 +214,7 @@ socket.on("users", (users) => {
 
 /* HISTORY */
 socket.on("history", (msgs) => {
+  if (!active) return;
   chats[active] = msgs;
   render();
 });

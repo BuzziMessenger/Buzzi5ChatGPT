@@ -9,13 +9,10 @@ app.use(cors());
 const server = http.createServer(app);
 
 const io = new Server(server, {
-  cors: {
-    origin: "*",
-    methods: ["GET", "POST"]
-  }
+  cors: { origin: "*" }
 });
 
-console.log("🔥 MSN STABLE SERVER RUNNING");
+console.log("🔥 MSN v6.1 SERVER RUNNING");
 
 const users = {};
 const messages = {};
@@ -38,11 +35,14 @@ function broadcastUsers() {
   io.emit("users", users);
 }
 
+function avatar(seed) {
+  return `https://api.dicebear.com/7.x/pixel-art/svg?seed=${seed}`;
+}
+
 io.on("connection", (socket) => {
 
   console.log("🟢 CONNECT:", socket.id);
 
-  // REGISTER
   socket.on("register", (username) => {
     if (!username) return;
 
@@ -52,23 +52,22 @@ io.on("connection", (socket) => {
       id: socket.id,
       status: "online",
       text: "Available",
-      avatar: `https://api.dicebear.com/7.x/pixel-art/svg?seed=${username}`,
+      avatar: avatar(username),
       lastSeen: Date.now()
     };
 
     broadcastUsers();
   });
 
-  // STATUS TEXT
   socket.on("set_status_text", ({ user, text }) => {
     if (users[user]) {
-      users[user].text = text;
+      users[user].text = text || "";
       broadcastUsers();
     }
   });
 
-  // CHAT
   socket.on("chat_message", (data) => {
+
     const msg = {
       from: data.from,
       to: data.to,
@@ -87,12 +86,10 @@ io.on("connection", (socket) => {
     socket.emit("chat_message", msg);
   });
 
-  // HISTORY
   socket.on("get_history", ({ userA, userB }) => {
     socket.emit("history", messages[roomKey(userA, userB)] || []);
   });
 
-  // TYPING
   socket.on("typing", ({ from, to }) => {
     const target = users[to];
     if (target) {
@@ -100,7 +97,6 @@ io.on("connection", (socket) => {
     }
   });
 
-  // DISCONNECT
   socket.on("disconnect", () => {
     if (!socket.username) return;
 
