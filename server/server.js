@@ -7,7 +7,7 @@ const app = express();
 app.use(cors());
 
 app.get("/", (req, res) => {
-  res.send("SERVER IS RUNNING");
+  res.send("OK SERVER RUNNING");
 });
 
 const server = http.createServer(app);
@@ -16,43 +16,22 @@ const io = new Server(server, {
   cors: { origin: "*" }
 });
 
-console.log("🔥 SERVER FILE LOADED");
-
-// simpele user map
-const users = {};
+console.log("🔥 FILE LOADED");
 
 io.on("connection", (socket) => {
-  console.log("🟢 SOCKET CONNECTED:", socket.id);
+  console.log("🟢 CLIENT CONNECTED:", socket.id);
 
-  socket.on("register", (username) => {
-    console.log("👤 REGISTER:", username);
-
-    if (!username) return;
-
-    users[username] = socket.id;
-    socket.username = username;
-
-    io.emit("users", Object.keys(users));
+  socket.onAny((event, data) => {
+    console.log("📡 EVENT RECEIVED:", event, data);
   });
 
   socket.on("chat_message", (msg) => {
-    console.log("📩 CHAT MSG:", msg);
+    console.log("💬 CHAT MESSAGE:", msg);
 
     io.emit("chat_message", msg);
   });
-
-  socket.on("disconnect", () => {
-    console.log("❌ DISCONNECT");
-
-    if (socket.username) {
-      delete users[socket.username];
-      io.emit("users", Object.keys(users));
-    }
-  });
 });
 
-const PORT = process.env.PORT || 3000;
-
-server.listen(PORT, () => {
-  console.log("🚀 SERVER LISTENING ON PORT", PORT);
+server.listen(process.env.PORT || 3000, () => {
+  console.log("🚀 SERVER LISTENING");
 });

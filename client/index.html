@@ -2,11 +2,11 @@
 <html lang="nl">
 <head>
 <meta charset="UTF-8">
-<title>MSN Fixed</title>
+<title>Socket Test</title>
 
 <style>
 body {
-  font-family: Tahoma;
+  font-family: Arial;
   background: #cfe3ff;
   display: flex;
   justify-content: center;
@@ -30,16 +30,14 @@ body {
 
 input {
   padding: 10px;
-  width: 100%;
-  box-sizing: border-box;
   border: none;
   border-top: 1px solid #ccc;
 }
 
 .msg {
-  margin: 5px 0;
-  padding: 5px;
   background: #eee;
+  margin: 5px;
+  padding: 5px;
 }
 </style>
 </head>
@@ -48,7 +46,7 @@ input {
 
 <div class="box">
   <div id="chat"></div>
-  <input id="input" placeholder="Typ..." />
+  <input id="input" placeholder="Typ en druk Enter..." />
 </div>
 
 <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
@@ -56,17 +54,12 @@ input {
 <script>
 const socket = io("https://buzzimessenger.onrender.com");
 
-// 🔥 HARD DEBUG
 console.log("🟡 FRONTEND LOADED");
 
 socket.on("connect", () => {
   console.log("🟢 CONNECTED:", socket.id);
-
-  const name = prompt("Username:");
-  socket.emit("register", name);
 });
 
-// RECEIVE CHAT
 socket.on("chat_message", (msg) => {
   console.log("📩 RECEIVED:", msg);
 
@@ -77,7 +70,6 @@ socket.on("chat_message", (msg) => {
   document.getElementById("chat").appendChild(div);
 });
 
-// SEND CHAT
 document.getElementById("input").addEventListener("keydown", (e) => {
   if (e.key === "Enter") {
     const msg = e.target.value;
