@@ -78,36 +78,39 @@
   </div>
 </div>
 
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+
 <script>
+const socket = io("https://buzzimessenger.onrender.com");
+
 function add(text, type) {
   const chat = document.getElementById("chat");
-  chat.innerHTML += `<div class="msg ${type}">${text}</div>`;
+
+  chat.innerHTML += `
+    <div class="msg ${type}">
+      ${text}
+      <div style="font-size:10px; opacity:0.6;">
+        ${new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}
+      </div>
+    </div>
+  `;
+
   chat.scrollTop = chat.scrollHeight;
 }
 
-async function send() {
+socket.on("message", (data) => {
+  add(data.text, "bot");
+});
+
+function send() {
   const input = document.getElementById("text");
   const msg = input.value.trim();
   if (!msg) return;
 
   add("Jij: " + msg, "me");
+
+  socket.emit("message", msg);
+
   input.value = "";
-
-  try {
-    const res = await fetch("https://buzzimessenger.onrender.com/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: msg })
-    });
-
-    const data = await res.json();
-    add("Bot: " + data.reply, "bot");
-
-  } catch (e) {
-    add("❌ Server error", "bot");
-  }
 }
 </script>
-
-</body>
-</html>

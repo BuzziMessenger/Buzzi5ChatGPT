@@ -20,12 +20,11 @@ io.on("connection", (socket) => {
   socket.on("message", (msg) => {
     io.emit("message", {
       text: msg,
-      time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+      time: new Date().toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit"
+      })
     });
-  });
-
-  socket.on("disconnect", () => {
-    console.log("User disconnected");
   });
 });
 
