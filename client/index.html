@@ -7,19 +7,52 @@
   <style>
     body {
       margin: 0;
-      font-family: Arial;
-      background: #e9f1ff;
+      font-family: Tahoma, Arial;
+      background: linear-gradient(#cfe3ff, #ffffff);
       display: flex;
       justify-content: center;
       align-items: center;
       height: 100vh;
     }
 
-    .box {
-      width: 420px;
-      height: 520px;
-      background: white;
+    .app {
+      display: flex;
+      width: 700px;
+      height: 550px;
       border: 1px solid #2b579a;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      background: white;
+    }
+
+    /* CONTACT LIST */
+    .contacts {
+      width: 200px;
+      background: #eaf3ff;
+      border-right: 1px solid #2b579a;
+      padding: 10px;
+    }
+
+    .contact {
+      padding: 8px;
+      margin-bottom: 6px;
+      background: white;
+      border: 1px solid #ccc;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .contact:hover {
+      background: #d7ebff;
+    }
+
+    .online {
+      color: green;
+      font-size: 12px;
+    }
+
+    /* CHAT */
+    .chatbox {
+      flex: 1;
       display: flex;
       flex-direction: column;
     }
@@ -35,14 +68,27 @@
       flex: 1;
       padding: 10px;
       overflow-y: auto;
+      background: #f9fbff;
     }
 
     .msg {
       margin: 6px 0;
+      padding: 6px 10px;
+      border-radius: 8px;
+      max-width: 75%;
+      font-size: 14px;
     }
 
-    .me { color: blue; }
-    .bot { color: green; }
+    .me {
+      background: #d7ebff;
+      margin-left: auto;
+      text-align: right;
+    }
+
+    .other {
+      background: #eeeeee;
+      margin-right: auto;
+    }
 
     .input {
       display: flex;
@@ -57,25 +103,52 @@
     }
 
     .input button {
-      padding: 10px;
       background: #2b579a;
       color: white;
       border: none;
+      padding: 10px 15px;
+      cursor: pointer;
     }
   </style>
 </head>
 
 <body>
 
-<div class="box">
-  <div class="header">💬 Buzzi Messenger</div>
+<div class="app">
 
-  <div id="chat" class="chat"></div>
+  <!-- CONTACT LIST -->
+  <div class="contacts">
+    <h4>Contacten</h4>
 
-  <div class="input">
-    <input id="text" placeholder="Typ bericht..." />
-    <button onclick="send()">Send</button>
+    <div class="contact" onclick="selectUser('Friend 1')">
+      Friend 1 <div class="online">🟢 online</div>
+    </div>
+
+    <div class="contact" onclick="selectUser('Friend 2')">
+      Friend 2 <div class="online">🟢 online</div>
+    </div>
+
+    <div class="contact" onclick="selectUser('Friend 3')">
+      Friend 3 <div class="online">🟡 away</div>
+    </div>
   </div>
+
+  <!-- CHAT -->
+  <div class="chatbox">
+
+    <div class="header" id="chatHeader">
+      💬 Chat met niemand
+    </div>
+
+    <div id="chat" class="chat"></div>
+
+    <div class="input">
+      <input id="text" placeholder="Typ bericht..." />
+      <button onclick="send()">Send</button>
+    </div>
+
+  </div>
+
 </div>
 
 <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
@@ -83,7 +156,15 @@
 <script>
 const socket = io("https://buzzimessenger.onrender.com");
 
-function add(text, type) {
+let currentUser = "Friend 1";
+
+function selectUser(name) {
+  currentUser = name;
+  document.getElementById("chatHeader").innerText = "💬 Chat met " + name;
+  document.getElementById("chat").innerHTML = "";
+}
+
+function addMsg(text, type) {
   const chat = document.getElementById("chat");
 
   chat.innerHTML += `
@@ -98,19 +179,28 @@ function add(text, type) {
   chat.scrollTop = chat.scrollHeight;
 }
 
+/* RECEIVE MESSAGE */
 socket.on("message", (data) => {
-  add(data.text, "bot");
+  addMsg(data.user + ": " + data.text, "other");
 });
 
+/* SEND MESSAGE */
 function send() {
   const input = document.getElementById("text");
   const msg = input.value.trim();
   if (!msg) return;
 
-  add("Jij: " + msg, "me");
+  addMsg("Jij: " + msg, "me");
 
-  socket.emit("message", msg);
+  socket.emit("message", {
+    user: "Robbin",
+    text: msg,
+    to: currentUser
+  });
 
   input.value = "";
 }
 </script>
+
+</body>
+</html>

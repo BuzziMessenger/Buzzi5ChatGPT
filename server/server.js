@@ -9,25 +9,17 @@ app.use(cors());
 const server = http.createServer(app);
 
 const io = new Server(server, {
-  cors: {
-    origin: "*"
-  }
+  cors: { origin: "*" }
 });
 
 io.on("connection", (socket) => {
-  console.log("User connected:", socket.id);
+  console.log("user connected");
 
-  socket.on("message", (msg) => {
-    io.emit("message", {
-      text: msg,
-      time: new Date().toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit"
-      })
-    });
+  socket.on("message", (data) => {
+    io.emit("message", data);
   });
 });
 
 server.listen(process.env.PORT || 3000, () => {
-  console.log("Server running");
+  console.log("running");
 });
