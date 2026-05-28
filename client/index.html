@@ -58,6 +58,15 @@ body {
     <p>Als je dit ziet, is je frontend OK.</p>
   </div>
 </div>
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 
+<script>
+const socket = io("https://buzzimessenger.onrender.com");
+
+socket.on("connect", () => {
+  console.log("CONNECTED:", socket.id);
+  alert("Socket connected 👍");
+});
+</script>
 </body>
 </html>
