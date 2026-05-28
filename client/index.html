@@ -2,32 +2,115 @@
 <html lang="nl">
 <head>
   <meta charset="UTF-8" />
-  <title>Buzzi Chat</title>
-</head>
-<body>
-  <h1>Buzzi Messenger</h1>
+  <title>Buzzi Messenger</title>
 
-  <input id="msg" placeholder="Typ bericht..." />
-  <button onclick="send()">Send</button>
-
-  <div id="chat"></div>
-
-  <script>
-    async function send() {
-      const msg = document.getElementById("msg").value;
-
-      const res = await fetch("https://YOUR-RENDER-URL.onrender.com/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: msg })
-      });
-
-      const data = await res.json();
-
-      document.getElementById("chat").innerHTML +=
-        "<p><b>Jij:</b> " + msg + "</p>" +
-        "<p><b>Bot:</b> " + data.reply + "</p>";
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial;
+      background: linear-gradient(#dfe9f3, #ffffff);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
     }
-  </script>
+
+    .chatbox {
+      width: 420px;
+      height: 520px;
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .header {
+      background: #0078d7;
+      color: white;
+      padding: 12px;
+      font-weight: bold;
+    }
+
+    .messages {
+      flex: 1;
+      padding: 10px;
+      overflow-y: auto;
+    }
+
+    .msg {
+      margin: 6px 0;
+      padding: 6px 10px;
+      border-radius: 6px;
+      max-width: 80%;
+    }
+
+    .me {
+      background: #d1e7ff;
+      margin-left: auto;
+    }
+
+    .bot {
+      background: #e9e9e9;
+      margin-right: auto;
+    }
+
+    .input {
+      display: flex;
+      border-top: 1px solid #ddd;
+    }
+
+    .input input {
+      flex: 1;
+      padding: 10px;
+      border: none;
+      outline: none;
+    }
+
+    .input button {
+      padding: 10px 15px;
+      border: none;
+      background: #0078d7;
+      color: white;
+      cursor: pointer;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="chatbox">
+  <div class="header">💬 Buzzi Messenger</div>
+
+  <div id="messages" class="messages"></div>
+
+  <div class="input">
+    <input id="text" placeholder="Typ bericht..." />
+    <button onclick="send()">Send</button>
+  </div>
+</div>
+
+<script>
+function send() {
+  const input = document.getElementById("text");
+  const msg = input.value.trim();
+  if (!msg) return;
+
+  const box = document.getElementById("messages");
+
+  // eigen bericht
+  box.innerHTML += `<div class="msg me">${msg}</div>`;
+
+  // fake reply (tijdelijk!)
+  setTimeout(() => {
+    box.innerHTML += `<div class="msg bot">Ontvangen: ${msg}</div>`;
+    box.scrollTop = box.scrollHeight;
+  }, 300);
+
+  input.value = "";
+}
+</script>
+
 </body>
 </html>
