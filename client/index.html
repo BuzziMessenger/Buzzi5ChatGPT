@@ -2,7 +2,7 @@
 <html lang="nl">
 <head>
 <meta charset="UTF-8">
-<title>MSN FINAL</title>
+<title>MSN v6</title>
 
 <style>
 body {
@@ -16,16 +16,16 @@ body {
 }
 
 .app {
-  width: 900px;
+  width: 920px;
   height: 650px;
   display: flex;
   background: white;
   border: 1px solid #2b579a;
 }
 
-/* LEFT */
+/* CONTACTS */
 .left {
-  width: 270px;
+  width: 280px;
   background: #eaf3ff;
   border-right: 1px solid #2b579a;
   padding: 10px;
@@ -33,14 +33,23 @@ body {
 }
 
 .user {
+  display: flex;
+  gap: 8px;
   padding: 8px;
   margin: 6px 0;
   background: white;
   border: 1px solid #ccc;
   cursor: pointer;
+  align-items: center;
 }
 
-.status {
+.avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+}
+
+.small {
   font-size: 11px;
   color: gray;
 }
@@ -48,7 +57,7 @@ body {
 .online { color: green; }
 .offline { color: gray; }
 
-/* RIGHT */
+/* CHAT */
 .right {
   flex: 1;
   display: flex;
@@ -69,9 +78,10 @@ body {
 }
 
 .msg {
-  margin: 5px 0;
-  padding: 6px;
+  margin: 6px 0;
+  padding: 7px;
   max-width: 70%;
+  border-radius: 4px;
 }
 
 .me {
@@ -81,12 +91,6 @@ body {
 
 .other {
   background: #eee;
-}
-
-.typing {
-  font-size: 12px;
-  color: gray;
-  padding: 5px;
 }
 
 /* INPUT */
@@ -116,8 +120,9 @@ button {
   border-bottom: 1px solid #ccc;
 }
 
-.statusbar input {
-  border: 1px solid #ccc;
+/* EMOJI */
+.emoji {
+  cursor: pointer;
   padding: 5px;
 }
 </style>
@@ -137,12 +142,16 @@ button {
     <div class="header" id="header">Select chat</div>
 
     <div class="statusbar">
-      <input id="statusText" placeholder="Set status (e.g. Away for lunch)" />
+      <input id="statusText" placeholder="Away for lunch..." />
       <button onclick="setStatus()">Set</button>
     </div>
 
     <div class="chat" id="chat"></div>
     <div class="typing" id="typing"></div>
+
+    <div style="padding:5px;">
+      😀 😃 😄 😁 😂 ❤️ 👍
+    </div>
 
     <div class="input">
       <input id="input" placeholder="Typ..." />
@@ -162,6 +171,16 @@ let me = null;
 let active = null;
 let chats = {};
 
+/* EMOJI REPLACER */
+function parseEmojis(text) {
+  return text
+    .replaceAll(":)", "😊")
+    .replaceAll(":(", "😢")
+    .replaceAll("<3", "❤️")
+    .replaceAll(":D", "😄")
+    .replaceAll(":p", "😛");
+}
+
 socket.on("connect", () => {
   me = prompt("Username:");
   socket.emit("register", me);
@@ -179,17 +198,19 @@ socket.on("users", (users) => {
     div.className = "user";
 
     div.innerHTML = `
-      <b>${name}</b><br>
-      <span class="${data.status === "online" ? "online" : "offline"}">
-        ${data.status}
-      </span><br>
-      <small>${data.text || ""}</small>
+      <img class="avatar" src="${data.avatar}" />
+      <div>
+        <b>${name}</b><br>
+        <span class="${data.status === "online" ? "online" : "offline"}">
+          ${data.status}
+        </span><br>
+        <span class="small">${data.text}</span>
+      </div>
     `;
 
     div.onclick = () => {
       active = name;
       document.getElementById("header").innerText = "Chat met " + name;
-
       socket.emit("get_history", { userA: me, userB: name });
     };
 
@@ -211,8 +232,6 @@ socket.on("chat_message", (msg) => {
   chats[other].push(msg);
 
   if (active === other) render();
-
-  playSound();
 });
 
 /* TYPING */
@@ -229,9 +248,11 @@ socket.on("typing", (d) => {
 /* SEND */
 function send() {
   const input = document.getElementById("input");
-  const text = input.value.trim();
+  let text = input.value.trim();
 
   if (!text || !active) return;
+
+  text = parseEmojis(text);
 
   socket.emit("chat_message", {
     from: me,
@@ -242,13 +263,11 @@ function send() {
   input.value = "";
 }
 
-/* STATUS TEXT */
+/* STATUS */
 function setStatus() {
-  const text = document.getElementById("statusText").value;
-
   socket.emit("set_status_text", {
     user: me,
-    text
+    text: document.getElementById("statusText").value
   });
 }
 
@@ -261,12 +280,6 @@ document.getElementById("input").addEventListener("input", () => {
     to: active
   });
 });
-
-/* SOUND */
-function playSound() {
-  const audio = new Audio("https://actions.google.com/sounds/v1/notifications/digital_watch_alarm_long.ogg");
-  audio.play();
-}
 
 /* RENDER */
 function render() {
