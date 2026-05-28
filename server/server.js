@@ -14,9 +14,11 @@ const io = new Server(server, {
 
 const users = {};
 
-io.on("connection", (socket) => {
+function emitUsers() {
+  io.emit("users", Object.keys(users));
+}
 
-  console.log("connected:", socket.id);
+io.on("connection", (socket) => {
 
   socket.on("register", (username) => {
     if (!username) return;
@@ -24,14 +26,15 @@ io.on("connection", (socket) => {
     users[username] = socket.id;
     socket.username = username;
 
-    io.emit("users", Object.keys(users));
+    emitUsers();
   });
 
   socket.on("private_message", ({ from, to, text }) => {
-    const targetSocket = users[to];
 
-    if (targetSocket) {
-      io.to(targetSocket).emit("private_message", { from, text });
+    const target = users[to];
+
+    if (target) {
+      io.to(target).emit("private_message", { from, text });
     }
 
     socket.emit("private_message", { from, text });
@@ -40,12 +43,10 @@ io.on("connection", (socket) => {
   socket.on("disconnect", () => {
     if (socket.username) {
       delete users[socket.username];
-      io.emit("users", Object.keys(users));
+      emitUsers();
     }
   });
 
 });
 
-server.listen(process.env.PORT || 3000, () => {
-  console.log("running");
-});
+server.listen(process.env.PORT || 3000);
