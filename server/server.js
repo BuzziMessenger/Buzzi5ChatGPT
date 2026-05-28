@@ -28,7 +28,9 @@ io.on('connection', (socket) => {
     console.log('Gebruiker disconnected')
   })
 })
-
+app.get('/', (req, res) => {
+  res.send('Buzzi Messenger Backend draait 🚀')
+})
 server.listen(5000, () => {
   console.log('Server draait op poort 5000')
 })
