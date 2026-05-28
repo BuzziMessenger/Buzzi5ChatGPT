@@ -1,8 +1,4 @@
-<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
-
 <script>
-const socket = io("https://buzzimessenger.onrender.com");
-
 function addMsg(text, type) {
   const chat = document.getElementById("chat");
 
@@ -16,19 +12,26 @@ function addMsg(text, type) {
   chat.scrollTop = chat.scrollHeight;
 }
 
-socket.on("message", (data) => {
-  addMsg(data.text, "bot");
-});
-
-function send() {
+async function send() {
   const input = document.getElementById("text");
   const msg = input.value.trim();
   if (!msg) return;
 
   addMsg("Jij: " + msg, "me");
-
-  socket.emit("message", msg);
-
   input.value = "";
+
+  try {
+    const res = await fetch("https://buzzimessenger.onrender.com/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: msg })
+    });
+
+    const data = await res.json();
+    addMsg("Bot: " + data.reply, "bot");
+
+  } catch (e) {
+    addMsg("❌ Server error", "bot");
+  }
 }
 </script>
