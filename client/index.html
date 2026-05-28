@@ -21,6 +21,7 @@ body {
   height: 560px;
   border: 1px solid #2b579a;
   background: white;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
 }
 
 .sidebar {
@@ -30,7 +31,7 @@ body {
   padding: 10px;
 }
 
-.user {
+.me {
   font-weight: bold;
   margin-bottom: 10px;
 }
@@ -57,6 +58,7 @@ body {
   background: #2b579a;
   color: white;
   padding: 10px;
+  font-weight: bold;
 }
 
 .chat {
@@ -73,8 +75,15 @@ body {
   max-width: 70%;
 }
 
-.me { background: #d7ebff; margin-left: auto; }
-.other { background: #eee; margin-right: auto; }
+.meMsg {
+  background: #d7ebff;
+  margin-left: auto;
+}
+
+.otherMsg {
+  background: #eee;
+  margin-right: auto;
+}
 
 .input {
   display: flex;
@@ -101,18 +110,21 @@ button {
 <div class="app">
 
   <div class="sidebar">
-    <div class="user" id="me">👤 ...</div>
+    <div class="me" id="me">👤 ...</div>
     <div id="users"></div>
   </div>
 
   <div class="chatbox">
-    <div class="header" id="chatWith">💬 Geen chat</div>
+
+    <div class="header" id="header">💬 Geen chat geselecteerd</div>
+
     <div id="chat" class="chat"></div>
 
     <div class="input">
       <input id="text" placeholder="Typ..." />
       <button onclick="send()">Send</button>
     </div>
+
   </div>
 
 </div>
@@ -122,7 +134,7 @@ button {
 <script>
 const socket = io("https://buzzimessenger.onrender.com");
 
-let me = prompt("Kies je username:");
+let me = prompt("Kies username:");
 document.getElementById("me").innerText = "👤 " + me;
 
 socket.emit("register", me);
@@ -150,7 +162,7 @@ socket.on("users", (list) => {
 
 function openChat(user) {
   currentChat = user;
-  document.getElementById("chatWith").innerText = "💬 Chat met " + user;
+  document.getElementById("header").innerText = "💬 Chat met " + user;
 
   if (!chats[user]) chats[user] = [];
 
@@ -164,7 +176,11 @@ function render() {
   if (!currentChat) return;
 
   chats[currentChat].forEach(m => {
-    chat.innerHTML += `<div class="msg ${m.type}">${m.text}</div>`;
+    chat.innerHTML += `
+      <div class="msg ${m.type}">
+        ${m.text}
+      </div>
+    `;
   });
 
   chat.scrollTop = chat.scrollHeight;
@@ -177,7 +193,11 @@ function send() {
 
   if (!chats[currentChat]) chats[currentChat] = [];
 
-  chats[currentChat].push({ text: "Jij: " + msg, type: "me" });
+  chats[currentChat].push({
+    text: "Jij: " + msg,
+    type: "meMsg"
+  });
+
   render();
 
   socket.emit("private_message", {
@@ -189,14 +209,14 @@ function send() {
   input.value = "";
 }
 
-// RECEIVE MESSAGE
+// RECEIVE
 socket.on("private_message", (data) => {
 
   if (!chats[data.from]) chats[data.from] = [];
 
   chats[data.from].push({
     text: data.from + ": " + data.text,
-    type: "other"
+    type: "otherMsg"
   });
 
   if (currentChat === data.from) {

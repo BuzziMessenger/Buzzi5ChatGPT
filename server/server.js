@@ -9,52 +9,61 @@ app.use(cors());
 const server = http.createServer(app);
 
 const io = new Server(server, {
-  cors: { origin: "*" }
+  cors: {
+    origin: "*"
+  }
 });
 
 // username -> socket.id
 const users = {};
 
-function getOnlineUsers() {
-  return Object.keys(users);
+function emitUsers() {
+  io.emit("users", Object.keys(users));
 }
 
 io.on("connection", (socket) => {
 
-  // USER REGISTRATION
+  // register user
   socket.on("register", (username) => {
+    if (!username) return;
+
     users[username] = socket.id;
     socket.username = username;
 
-    io.emit("users", getOnlineUsers());
+    emitUsers();
+
+    console.log("User joined:", username);
   });
 
-  // PRIVATE MESSAGE ROUTING
-  socket.on("private_message", ({ to, from, text }) => {
+  // private message routing
+  socket.on("private_message", ({ from, to, text }) => {
+    console.log(from, "->", to, text);
 
-    const targetSocketId = users[to];
+    const targetSocket = users[to];
 
-    if (targetSocketId) {
-      io.to(targetSocketId).emit("private_message", {
+    // send to receiver
+    if (targetSocket) {
+      io.to(targetSocket).emit("private_message", {
         from,
         text
       });
     }
 
-    // send back to sender too (so chat sync works)
+    // echo back to sender (sync chat)
     socket.emit("private_message", {
       from,
       text
     });
   });
 
-  // DISCONNECT
+  // disconnect cleanup
   socket.on("disconnect", () => {
     if (socket.username) {
       delete users[socket.username];
-      io.emit("users", getOnlineUsers());
+      emitUsers();
     }
   });
+
 });
 
 server.listen(process.env.PORT || 3000, () => {
