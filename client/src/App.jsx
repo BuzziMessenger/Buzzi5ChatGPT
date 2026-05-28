@@ -1,5 +1,14 @@
+import React, { useState, useEffect } from 'react'
 import socket from './socket'
-import React from 'react'
+const [message, setMessage] = useState('')
+const [messages, setMessages] = useState([])
+useEffect(() => {
+
+  socket.on('receive_message', (data) => {
+    setMessages((prev) => [...prev, data])
+  })
+
+}, [])
 import './styles.css'
 
 export default function App() {
