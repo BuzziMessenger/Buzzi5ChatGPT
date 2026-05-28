@@ -12,71 +12,43 @@ const io = new Server(server, {
   cors: { origin: "*" }
 });
 
-console.log("🔥 MSN REAL LEGACY FULL SERVER");
-
 const users = {};
 const messages = {};
 
-function roomKey(a, b) {
+function key(a, b) {
   return [a, b].sort().join("-");
-}
-
-function avatar(seed) {
-  return `https://api.dicebear.com/7.x/pixel-art/svg?seed=${seed}`;
-}
-
-function clean(text) {
-  return (text || "").replace(/</g, "").replace(/>/g, "");
-}
-
-function pushMessage(a, b, msg) {
-  const key = roomKey(a, b);
-  if (!messages[key]) messages[key] = [];
-  messages[key].push(msg);
-  if (messages[key].length > 500) messages[key].shift();
-}
-
-function broadcastUsers() {
-  io.emit("users", users);
 }
 
 io.on("connection", (socket) => {
 
-  socket.on("register", (username) => {
-    if (!username) return;
+  socket.on("register", (name) => {
+    if (!name) return;
 
-    socket.username = username;
+    socket.name = name;
 
-    users[username] = {
+    users[name] = {
       id: socket.id,
       status: "online",
-      text: "Available",
-      avatar: avatar(username),
-      lastSeen: Date.now()
+      text: "Available"
     };
 
-    broadcastUsers();
+    io.emit("users", users);
   });
 
   socket.on("set_status_text", ({ user, text }) => {
     if (users[user]) {
-      users[user].text = clean(text);
-      broadcastUsers();
+      users[user].text = text;
+      io.emit("users", users);
     }
   });
 
-  socket.on("chat_message", (data) => {
+  socket.on("chat_message", (msg) => {
+    const k = key(msg.from, msg.to);
 
-    const msg = {
-      from: data.from,
-      to: data.to,
-      text: clean(data.text),
-      time: Date.now()
-    };
+    if (!messages[k]) messages[k] = [];
+    messages[k].push(msg);
 
-    pushMessage(data.from, data.to, msg);
-
-    const target = users[data.to];
+    const target = users[msg.to];
 
     if (target) {
       io.to(target.id).emit("chat_message", msg);
@@ -86,28 +58,18 @@ io.on("connection", (socket) => {
   });
 
   socket.on("get_history", ({ userA, userB }) => {
-    socket.emit("history", messages[roomKey(userA, userB)] || []);
-  });
-
-  socket.on("typing", ({ from, to }) => {
-    const target = users[to];
-    if (target) {
-      io.to(target.id).emit("typing", { from });
-    }
+    socket.emit("history", messages[key(userA, userB)] || []);
   });
 
   socket.on("disconnect", () => {
-    if (!socket.username) return;
+    if (!socket.name) return;
 
-    if (users[socket.username]) {
-      users[socket.username].status = "offline";
-      users[socket.username].lastSeen = Date.now();
+    if (users[socket.name]) {
+      users[socket.name].status = "offline";
     }
 
-    broadcastUsers();
+    io.emit("users", users);
   });
 });
 
-server.listen(process.env.PORT || 3000, () => {
-  console.log("🚀 READY");
-});
+server.listen(3000, () => console.log("MSN CLEAN SERVER RUNNING"));

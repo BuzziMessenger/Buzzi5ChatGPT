@@ -2,20 +2,20 @@
 <html lang="nl">
 <head>
 <meta charset="UTF-8">
-<title>MSN REAL LEGACY</title>
+<title>MSN CLEAN</title>
 
 <style>
 body {
   margin: 0;
   font-family: Tahoma;
   background: #cfe3ff;
-  height: 100vh;
   display: flex;
+  height: 100vh;
 }
 
 /* CONTACTS */
 .left {
-  width: 280px;
+  width: 260px;
   background: #eaf3ff;
   border-right: 1px solid #2b579a;
   padding: 10px;
@@ -23,40 +23,18 @@ body {
 }
 
 .user {
-  display: flex;
-  gap: 8px;
-  padding: 8px;
-  margin: 6px 0;
   background: white;
+  margin: 6px 0;
+  padding: 8px;
   border: 1px solid #ccc;
   cursor: pointer;
-  align-items: center;
 }
 
-.user.active {
-  background: #d7ebff;
-  border: 1px solid #2b579a;
-}
-
-.avatar {
-  width: 34px;
-  height: 34px;
-  border-radius: 6px;
-}
-
-/* CHAT WINDOW */
-.chatWindow {
-  position: absolute;
-  bottom: 0;
-  right: 20px;
-  width: 380px;
-  height: 450px;
-  background: white;
-  border: 1px solid #2b579a;
+/* CHAT */
+.chatBox {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 0 15px rgba(0,0,0,0.25);
-  transition: transform 0.1s;
 }
 
 .header {
@@ -67,7 +45,7 @@ body {
 
 .chat {
   flex: 1;
-  padding: 8px;
+  padding: 10px;
   overflow-y: auto;
   background: #f9fbff;
 }
@@ -75,8 +53,7 @@ body {
 .msg {
   margin: 5px 0;
   padding: 6px;
-  max-width: 80%;
-  border-radius: 4px;
+  max-width: 70%;
 }
 
 .me { background: #d7ebff; margin-left: auto; }
@@ -84,37 +61,22 @@ body {
 
 .input {
   display: flex;
-  border-top: 1px solid #ccc;
 }
 
 input {
   flex: 1;
-  padding: 8px;
-  border: none;
+  padding: 10px;
 }
 
 button {
+  padding: 10px;
   background: #2b579a;
   color: white;
   border: none;
-  padding: 8px;
-  cursor: pointer;
-}
-
-#typing {
-  font-size: 11px;
-  color: gray;
-  padding: 3px 8px;
-}
-
-.statusbar {
-  padding: 5px;
-  background: #f5f5f5;
-  border-bottom: 1px solid #ccc;
 }
 
 /* LOGIN */
-#loginScreen {
+#login {
   position: fixed;
   inset: 0;
   background: #2b579a;
@@ -123,46 +85,32 @@ button {
   justify-content: center;
   align-items: center;
   color: white;
-  z-index: 9999;
 }
 </style>
 </head>
 
 <body>
 
-<!-- LOGIN -->
-<div id="loginScreen">
-  <h2>MSN Messenger</h2>
-  <input id="loginInput" placeholder="Username..." style="padding:10px;">
-  <button onclick="login()" style="margin-top:10px; padding:10px;">Login</button>
+<div id="login">
+  <h2>MSN LOGIN</h2>
+  <input id="name" placeholder="Username">
+  <button onclick="login()">Start</button>
 </div>
 
-<!-- CONTACTS -->
 <div class="left">
-  <h4>Contacts</h4>
+  <h3>Contacts</h3>
   <div id="users"></div>
 </div>
 
-<!-- CHAT WINDOW -->
-<div class="chatWindow" id="chatWindow" style="display:none;">
-  <div class="header" id="header">Chat</div>
-
-  <div class="statusbar">
-    <input id="statusText" placeholder="Set status..." />
-  </div>
-
+<div class="chatBox">
+  <div class="header" id="header">Select chat</div>
   <div class="chat" id="chat"></div>
-  <div id="typing"></div>
 
   <div class="input">
-    <input id="input" placeholder="Typ..." />
+    <input id="msg" placeholder="Type...">
     <button onclick="send()">Send</button>
   </div>
 </div>
-
-<!-- SOUNDS -->
-<audio id="sndSend" src="https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3"></audio>
-<audio id="sndRecv" src="https://assets.mixkit.co/active_storage/sfx/2356/2356-preview.mp3"></audio>
 
 <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 
@@ -174,22 +122,11 @@ let active = null;
 let chats = {};
 
 function login() {
-  me = document.getElementById("loginInput").value;
+  me = document.getElementById("name").value || ("User" + Math.floor(Math.random()*1000));
 
-  if (!me) return;
+  document.getElementById("login").style.display = "none";
 
-  document.getElementById("loginScreen").style.display = "none";
   socket.emit("register", me);
-}
-
-/* EMOJIS */
-function emoji(t) {
-  return t
-    .replaceAll(":)", "😊")
-    .replaceAll(":(", "😢")
-    .replaceAll(":D", "😄")
-    .replaceAll("<3", "❤️")
-    .replaceAll("lol", "😂");
 }
 
 /* USERS */
@@ -201,20 +138,15 @@ socket.on("users", (users) => {
     if (name === me) return;
 
     const div = document.createElement("div");
-    div.className = "user " + (active === name ? "active" : "");
+    div.className = "user";
 
     div.innerHTML = `
-      <img class="avatar" src="${data.avatar}">
-      <div>
-        <b>${name}</b><br>
-        <small>${data.status} - ${data.text}</small>
-      </div>
+      <b>${name}</b><br>
+      <small>${data.status} - ${data.text}</small>
     `;
 
     div.onclick = () => {
       active = name;
-
-      document.getElementById("chatWindow").style.display = "flex";
       document.getElementById("header").innerText = "Chat met " + name;
 
       socket.emit("get_history", {
@@ -234,43 +166,31 @@ socket.on("history", (msgs) => {
   render();
 });
 
-/* CHAT */
+/* MESSAGE */
 socket.on("chat_message", (msg) => {
   const other = msg.from === me ? msg.to : msg.from;
 
   if (!chats[other]) chats[other] = [];
   chats[other].push(msg);
 
-  document.getElementById("sndRecv").play();
-
   if (active === other) render();
 });
 
 /* SEND */
 function send() {
-  const input = document.getElementById("input");
-  let text = input.value.trim();
+  const input = document.getElementById("msg");
+  const text = input.value.trim();
 
   if (!text || !active) return;
 
   socket.emit("chat_message", {
     from: me,
     to: active,
-    text: emoji(text)
+    text
   });
-
-  document.getElementById("sndSend").play();
 
   input.value = "";
 }
-
-/* STATUS */
-document.getElementById("statusText").addEventListener("input", () => {
-  socket.emit("set_status_text", {
-    user: me,
-    text: document.getElementById("statusText").value
-  });
-});
 
 /* RENDER */
 function render() {
