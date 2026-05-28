@@ -2,16 +2,18 @@ const express = require("express");
 const cors = require("cors");
 
 const app = express();
+
 app.use(cors());
 app.use(express.json());
 
+// CHAT ENDPOINT (DIT IS JE CODE)
 app.post("/chat", (req, res) => {
-  const msg = req.body.message;
+  res.json({ reply: "Echo: " + req.body.message });
+});
 
-  // simpele reply (later kun je AI toevoegen)
-  res.json({
-    reply: "Ontvangen: " + msg
-  });
+// test route (optioneel)
+app.get("/", (req, res) => {
+  res.send("Buzzi server werkt");
 });
 
 const PORT = process.env.PORT || 3000;
