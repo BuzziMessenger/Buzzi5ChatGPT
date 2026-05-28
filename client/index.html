@@ -2,21 +2,21 @@
 <html lang="nl">
 <head>
 <meta charset="UTF-8">
-<title>MSN v5</title>
+<title>MSN FINAL</title>
 
 <style>
 body {
   margin: 0;
   font-family: Tahoma;
   background: #cfe3ff;
-  height: 100vh;
   display: flex;
   justify-content: center;
   align-items: center;
+  height: 100vh;
 }
 
 .app {
-  width: 880px;
+  width: 900px;
   height: 650px;
   display: flex;
   background: white;
@@ -29,11 +29,12 @@ body {
   background: #eaf3ff;
   border-right: 1px solid #2b579a;
   padding: 10px;
+  overflow-y: auto;
 }
 
 .user {
-  padding: 6px;
-  margin: 5px 0;
+  padding: 8px;
+  margin: 6px 0;
   background: white;
   border: 1px solid #ccc;
   cursor: pointer;
@@ -70,7 +71,7 @@ body {
 .msg {
   margin: 5px 0;
   padding: 6px;
-  max-width: 75%;
+  max-width: 70%;
 }
 
 .me {
@@ -88,15 +89,16 @@ body {
   padding: 5px;
 }
 
+/* INPUT */
 .input {
   display: flex;
+  border-top: 1px solid #ccc;
 }
 
 input {
   flex: 1;
   padding: 10px;
   border: none;
-  border-top: 1px solid #ccc;
 }
 
 button {
@@ -104,6 +106,19 @@ button {
   background: #2b579a;
   color: white;
   border: none;
+}
+
+/* STATUS BAR */
+.statusbar {
+  display: flex;
+  gap: 5px;
+  padding: 5px;
+  border-bottom: 1px solid #ccc;
+}
+
+.statusbar input {
+  border: 1px solid #ccc;
+  padding: 5px;
 }
 </style>
 </head>
@@ -120,6 +135,12 @@ button {
   <div class="right">
 
     <div class="header" id="header">Select chat</div>
+
+    <div class="statusbar">
+      <input id="statusText" placeholder="Set status (e.g. Away for lunch)" />
+      <button onclick="setStatus()">Set</button>
+    </div>
+
     <div class="chat" id="chat"></div>
     <div class="typing" id="typing"></div>
 
@@ -146,7 +167,7 @@ socket.on("connect", () => {
   socket.emit("register", me);
 });
 
-// USERS
+/* USERS */
 socket.on("users", (users) => {
   const box = document.getElementById("users");
   box.innerHTML = "";
@@ -161,7 +182,8 @@ socket.on("users", (users) => {
       <b>${name}</b><br>
       <span class="${data.status === "online" ? "online" : "offline"}">
         ${data.status}
-      </span>
+      </span><br>
+      <small>${data.text || ""}</small>
     `;
 
     div.onclick = () => {
@@ -175,13 +197,13 @@ socket.on("users", (users) => {
   });
 });
 
-// HISTORY
+/* HISTORY */
 socket.on("history", (msgs) => {
   chats[active] = msgs;
   render();
 });
 
-// CHAT
+/* CHAT */
 socket.on("chat_message", (msg) => {
   const other = msg.from === me ? msg.to : msg.from;
 
@@ -189,10 +211,11 @@ socket.on("chat_message", (msg) => {
   chats[other].push(msg);
 
   if (active === other) render();
+
   playSound();
 });
 
-// TYPING
+/* TYPING */
 socket.on("typing", (d) => {
   if (d.from === active) {
     document.getElementById("typing").innerText =
@@ -203,7 +226,7 @@ socket.on("typing", (d) => {
   }
 });
 
-// SEND
+/* SEND */
 function send() {
   const input = document.getElementById("input");
   const text = input.value.trim();
@@ -219,7 +242,17 @@ function send() {
   input.value = "";
 }
 
-// typing emit
+/* STATUS TEXT */
+function setStatus() {
+  const text = document.getElementById("statusText").value;
+
+  socket.emit("set_status_text", {
+    user: me,
+    text
+  });
+}
+
+/* TYPING */
 document.getElementById("input").addEventListener("input", () => {
   if (!active) return;
 
@@ -229,13 +262,13 @@ document.getElementById("input").addEventListener("input", () => {
   });
 });
 
-// sound
+/* SOUND */
 function playSound() {
   const audio = new Audio("https://actions.google.com/sounds/v1/notifications/digital_watch_alarm_long.ogg");
   audio.play();
 }
 
-// render
+/* RENDER */
 function render() {
   const chat = document.getElementById("chat");
   chat.innerHTML = "";

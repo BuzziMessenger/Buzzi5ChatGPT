@@ -1,119 +1,255 @@
-const express = require("express");
-const http = require("http");
-const cors = require("cors");
-const { Server } = require("socket.io");
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<title>MSN v5</title>
 
-const app = express();
-app.use(cors());
-
-const server = http.createServer(app);
-
-const io = new Server(server, {
-  cors: { origin: "*" }
-});
-
-console.log("🔥 MSN v5 SERVER LOADED");
-
-const users = {}; 
-// username -> { id, status, lastSeen }
-
-const messages = {}; 
-// "userA-userB" -> [messages]
-
-function roomKey(a, b) {
-  return [a, b].sort().join("-");
+<style>
+body {
+  margin: 0;
+  font-family: Tahoma;
+  background: #cfe3ff;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
-function pushMessage(a, b, msg) {
-  const key = roomKey(a, b);
-  if (!messages[key]) messages[key] = [];
-  messages[key].push(msg);
+.app {
+  width: 880px;
+  height: 650px;
+  display: flex;
+  background: white;
+  border: 1px solid #2b579a;
+}
 
-  if (messages[key].length > 100) {
-    messages[key].shift();
+/* LEFT */
+.left {
+  width: 270px;
+  background: #eaf3ff;
+  border-right: 1px solid #2b579a;
+  padding: 10px;
+}
+
+.user {
+  padding: 6px;
+  margin: 5px 0;
+  background: white;
+  border: 1px solid #ccc;
+  cursor: pointer;
+}
+
+.status {
+  font-size: 11px;
+  color: gray;
+}
+
+.online { color: green; }
+.offline { color: gray; }
+
+/* RIGHT */
+.right {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  background: #2b579a;
+  color: white;
+  padding: 10px;
+}
+
+.chat {
+  flex: 1;
+  padding: 10px;
+  overflow-y: auto;
+  background: #f9fbff;
+}
+
+.msg {
+  margin: 5px 0;
+  padding: 6px;
+  max-width: 75%;
+}
+
+.me {
+  background: #d7ebff;
+  margin-left: auto;
+}
+
+.other {
+  background: #eee;
+}
+
+.typing {
+  font-size: 12px;
+  color: gray;
+  padding: 5px;
+}
+
+.input {
+  display: flex;
+}
+
+input {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  border-top: 1px solid #ccc;
+}
+
+button {
+  padding: 10px;
+  background: #2b579a;
+  color: white;
+  border: none;
+}
+</style>
+</head>
+
+<body>
+
+<div class="app">
+
+  <div class="left">
+    <h4>Contacts</h4>
+    <div id="users"></div>
+  </div>
+
+  <div class="right">
+
+    <div class="header" id="header">Select chat</div>
+    <div class="chat" id="chat"></div>
+    <div class="typing" id="typing"></div>
+
+    <div class="input">
+      <input id="input" placeholder="Typ..." />
+      <button onclick="send()">Send</button>
+    </div>
+
+  </div>
+
+</div>
+
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+
+<script>
+const socket = io("https://buzzimessenger.onrender.com");
+
+let me = null;
+let active = null;
+let chats = {};
+
+socket.on("connect", () => {
+  me = prompt("Username:");
+  socket.emit("register", me);
+});
+
+// USERS
+socket.on("users", (users) => {
+  const box = document.getElementById("users");
+  box.innerHTML = "";
+
+  Object.entries(users).forEach(([name, data]) => {
+    if (name === me) return;
+
+    const div = document.createElement("div");
+    div.className = "user";
+
+    div.innerHTML = `
+      <b>${name}</b><br>
+      <span class="${data.status === "online" ? "online" : "offline"}">
+        ${data.status}
+      </span>
+    `;
+
+    div.onclick = () => {
+      active = name;
+      document.getElementById("header").innerText = "Chat met " + name;
+
+      socket.emit("get_history", { userA: me, userB: name });
+    };
+
+    box.appendChild(div);
+  });
+});
+
+// HISTORY
+socket.on("history", (msgs) => {
+  chats[active] = msgs;
+  render();
+});
+
+// CHAT
+socket.on("chat_message", (msg) => {
+  const other = msg.from === me ? msg.to : msg.from;
+
+  if (!chats[other]) chats[other] = [];
+  chats[other].push(msg);
+
+  if (active === other) render();
+  playSound();
+});
+
+// TYPING
+socket.on("typing", (d) => {
+  if (d.from === active) {
+    document.getElementById("typing").innerText =
+      d.from + " is typing...";
+    setTimeout(() => {
+      document.getElementById("typing").innerText = "";
+    }, 800);
   }
+});
+
+// SEND
+function send() {
+  const input = document.getElementById("input");
+  const text = input.value.trim();
+
+  if (!text || !active) return;
+
+  socket.emit("chat_message", {
+    from: me,
+    to: active,
+    text
+  });
+
+  input.value = "";
 }
 
-function sendUserList() {
-  io.emit("users", users);
-}
+// typing emit
+document.getElementById("input").addEventListener("input", () => {
+  if (!active) return;
 
-io.on("connection", (socket) => {
-  console.log("🟢 CONNECT:", socket.id);
-
-  // REGISTER
-  socket.on("register", (username) => {
-    if (!username) return;
-
-    socket.username = username;
-
-    users[username] = {
-      id: socket.id,
-      status: "online",
-      lastSeen: Date.now()
-    };
-
-    sendUserList();
-
-    socket.emit("system", "Welkom " + username);
-  });
-
-  // STATUS UPDATE
-  socket.on("set_status", ({ user, status }) => {
-    if (users[user]) {
-      users[user].status = status;
-      users[user].lastSeen = Date.now();
-      sendUserList();
-    }
-  });
-
-  // PRIVATE CHAT
-  socket.on("chat_message", (data) => {
-    const msg = {
-      from: data.from,
-      to: data.to,
-      text: data.text,
-      time: Date.now()
-    };
-
-    pushMessage(data.from, data.to, msg);
-
-    const target = users[data.to];
-
-    if (target) {
-      io.to(target.id).emit("chat_message", msg);
-    }
-
-    socket.emit("chat_message", msg);
-  });
-
-  // HISTORY REQUEST
-  socket.on("get_history", ({ userA, userB }) => {
-    const key = roomKey(userA, userB);
-    socket.emit("history", messages[key] || []);
-  });
-
-  // TYPING
-  socket.on("typing", ({ from, to }) => {
-    const target = users[to];
-    if (target) {
-      io.to(target.id).emit("typing", { from });
-    }
-  });
-
-  // DISCONNECT
-  socket.on("disconnect", () => {
-    if (!socket.username) return;
-
-    if (users[socket.username]) {
-      users[socket.username].status = "offline";
-      users[socket.username].lastSeen = Date.now();
-    }
-
-    sendUserList();
+  socket.emit("typing", {
+    from: me,
+    to: active
   });
 });
 
-server.listen(process.env.PORT || 3000, () => {
-  console.log("🚀 RUNNING");
-});
+// sound
+function playSound() {
+  const audio = new Audio("https://actions.google.com/sounds/v1/notifications/digital_watch_alarm_long.ogg");
+  audio.play();
+}
+
+// render
+function render() {
+  const chat = document.getElementById("chat");
+  chat.innerHTML = "";
+
+  (chats[active] || []).forEach(m => {
+    const div = document.createElement("div");
+    div.className = "msg " + (m.from === me ? "me" : "other");
+    div.innerText = `${m.from}: ${m.text}`;
+    chat.appendChild(div);
+  });
+
+  chat.scrollTop = chat.scrollHeight;
+}
+</script>
+
+</body>
+</html>
