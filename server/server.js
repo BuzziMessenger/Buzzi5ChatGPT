@@ -9,63 +9,61 @@ app.use(cors());
 const server = http.createServer(app);
 
 const io = new Server(server, {
-  cors: {
-    origin: "*"
-  }
+  cors: { origin: "*" }
 });
 
-// username -> socket.id
 const users = {};
-
-function emitUsers() {
-  io.emit("users", Object.keys(users));
-}
 
 io.on("connection", (socket) => {
 
-  // register user
-  socket.on("register", (username) => {
-    if (!username) return;
+  console.log("🔌 connected:", socket.id);
 
+  socket.on("register", (username) => {
     users[username] = socket.id;
     socket.username = username;
 
-    emitUsers();
-
-    console.log("User joined:", username);
+    console.log("👤 register:", username);
+    io.emit("users", Object.keys(users));
   });
 
-  // private message routing
-  socket.on("private_message", ({ from, to, text }) => {
-    console.log(from, "->", to, text);
+  socket.on("private_message", (data) => {
+    console.log("📩 RECEIVED:", data);
 
-    const targetSocket = users[to];
+    const { from, to, text } = data;
 
-    // send to receiver
-    if (targetSocket) {
-      io.to(targetSocket).emit("private_message", {
-        from,
-        text
-      });
+    const target = users[to];
+
+    if (!target) {
+      console.log("❌ user not found:", to);
+      return;
     }
 
-    // echo back to sender (sync chat)
+    console.log("➡ sending to:", to);
+
+    io.to(target).emit("private_message", {
+      from,
+      text
+    });
+
     socket.emit("private_message", {
       from,
       text
     });
   });
 
-  // disconnect cleanup
   socket.on("disconnect", () => {
-    if (socket.username) {
-      delete users[socket.username];
-      emitUsers();
-    }
-  });
+    console.log("❌ disconnect");
 
+    for (const name in users) {
+      if (users[name] === socket.id) {
+        delete users[name];
+      }
+    }
+
+    io.emit("users", Object.keys(users));
+  });
 });
 
 server.listen(process.env.PORT || 3000, () => {
-  console.log("MSN server running");
+  console.log("🚀 MSN server running");
 });
