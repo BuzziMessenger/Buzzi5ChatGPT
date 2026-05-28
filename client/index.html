@@ -2,21 +2,21 @@
 <html lang="nl">
 <head>
 <meta charset="UTF-8">
-<title>MSN v4 FIXED</title>
+<title>MSN v5</title>
 
 <style>
 body {
   margin: 0;
   font-family: Tahoma;
   background: #cfe3ff;
+  height: 100vh;
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 100vh;
 }
 
 .app {
-  width: 850px;
+  width: 880px;
   height: 650px;
   display: flex;
   background: white;
@@ -25,7 +25,7 @@ body {
 
 /* LEFT */
 .left {
-  width: 260px;
+  width: 270px;
   background: #eaf3ff;
   border-right: 1px solid #2b579a;
   padding: 10px;
@@ -44,25 +44,8 @@ body {
   color: gray;
 }
 
-.badge {
-  float: right;
-  background: red;
-  color: white;
-  font-size: 10px;
-  padding: 2px 6px;
-  border-radius: 10px;
-}
-
-.dot {
-  height: 8px;
-  width: 8px;
-  border-radius: 50%;
-  display: inline-block;
-  margin-right: 5px;
-}
-
-.online { background: green; }
-.offline { background: gray; }
+.online { color: green; }
+.offline { color: gray; }
 
 /* RIGHT */
 .right {
@@ -157,57 +140,45 @@ const socket = io("https://buzzimessenger.onrender.com");
 let me = null;
 let active = null;
 let chats = {};
-let unread = {};
 
-// FIX: login pas na connect
 socket.on("connect", () => {
-  console.log("connected");
-
   me = prompt("Username:");
   socket.emit("register", me);
 });
 
-// USERS (FIXED)
+// USERS
 socket.on("users", (users) => {
   const box = document.getElementById("users");
   box.innerHTML = "";
 
-  if (!users) return;
-
   Object.entries(users).forEach(([name, data]) => {
-    if (!name || name === me) return;
+    if (name === me) return;
 
     const div = document.createElement("div");
     div.className = "user";
 
-    const status = data?.status || "offline";
-
-    const badge = unread[name]
-      ? `<div class="badge">${unread[name]}</div>`
-      : "";
-
     div.innerHTML = `
-      <div>
-        <span class="dot ${status === "online" ? "online" : "offline"}"></span>
-        ${name}
-      </div>
-      <div class="status">${status}</div>
-      ${badge}
+      <b>${name}</b><br>
+      <span class="${data.status === "online" ? "online" : "offline"}">
+        ${data.status}
+      </span>
     `;
 
     div.onclick = () => {
       active = name;
-      unread[name] = 0;
-
       document.getElementById("header").innerText = "Chat met " + name;
 
-      if (!chats[name]) chats[name] = [];
-
-      render();
+      socket.emit("get_history", { userA: me, userB: name });
     };
 
     box.appendChild(div);
   });
+});
+
+// HISTORY
+socket.on("history", (msgs) => {
+  chats[active] = msgs;
+  render();
 });
 
 // CHAT
@@ -215,28 +186,20 @@ socket.on("chat_message", (msg) => {
   const other = msg.from === me ? msg.to : msg.from;
 
   if (!chats[other]) chats[other] = [];
-
-  chats[other].push({
-    text: `${msg.from}: ${msg.text}`,
-    type: msg.from === me ? "me" : "other"
-  });
-
-  if (active !== other) {
-    unread[other] = (unread[other] || 0) + 1;
-  }
+  chats[other].push(msg);
 
   if (active === other) render();
+  playSound();
 });
 
 // TYPING
-socket.on("typing", (data) => {
-  if (data.from === active) {
+socket.on("typing", (d) => {
+  if (d.from === active) {
     document.getElementById("typing").innerText =
-      data.from + " is aan het typen...";
-
+      d.from + " is typing...";
     setTimeout(() => {
       document.getElementById("typing").innerText = "";
-    }, 1000);
+    }, 800);
   }
 });
 
@@ -266,6 +229,12 @@ document.getElementById("input").addEventListener("input", () => {
   });
 });
 
+// sound
+function playSound() {
+  const audio = new Audio("https://actions.google.com/sounds/v1/notifications/digital_watch_alarm_long.ogg");
+  audio.play();
+}
+
 // render
 function render() {
   const chat = document.getElementById("chat");
@@ -273,8 +242,8 @@ function render() {
 
   (chats[active] || []).forEach(m => {
     const div = document.createElement("div");
-    div.className = "msg " + m.type;
-    div.innerText = m.text;
+    div.className = "msg " + (m.from === me ? "me" : "other");
+    div.innerText = `${m.from}: ${m.text}`;
     chat.appendChild(div);
   });
 

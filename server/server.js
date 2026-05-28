@@ -12,31 +12,36 @@ const io = new Server(server, {
   cors: { origin: "*" }
 });
 
-console.log("🔥 MSN v4 SERVER LOADED");
+console.log("🔥 MSN v5 SERVER LOADED");
 
-const users = {}; // username -> { id, status, lastSeen }
+const users = {}; 
+// username -> { id, status, lastSeen }
 
-const messageBuffer = [];
+const messages = {}; 
+// "userA-userB" -> [messages]
 
-function trimBuffer() {
-  if (messageBuffer.length > 80) {
-    messageBuffer.splice(0, messageBuffer.length - 80);
+function roomKey(a, b) {
+  return [a, b].sort().join("-");
+}
+
+function pushMessage(a, b, msg) {
+  const key = roomKey(a, b);
+  if (!messages[key]) messages[key] = [];
+  messages[key].push(msg);
+
+  if (messages[key].length > 100) {
+    messages[key].shift();
   }
 }
 
-// STATUS DEFAULT
-function setStatus(username, status) {
-  if (users[username]) {
-    users[username].status = status;
-    users[username].lastSeen = Date.now();
-  }
+function sendUserList() {
   io.emit("users", users);
 }
 
 io.on("connection", (socket) => {
-
   console.log("🟢 CONNECT:", socket.id);
 
+  // REGISTER
   socket.on("register", (username) => {
     if (!username) return;
 
@@ -48,13 +53,47 @@ io.on("connection", (socket) => {
       lastSeen: Date.now()
     };
 
-    io.emit("users", users);
+    sendUserList();
+
+    socket.emit("system", "Welkom " + username);
   });
 
+  // STATUS UPDATE
   socket.on("set_status", ({ user, status }) => {
-    setStatus(user, status);
+    if (users[user]) {
+      users[user].status = status;
+      users[user].lastSeen = Date.now();
+      sendUserList();
+    }
   });
 
+  // PRIVATE CHAT
+  socket.on("chat_message", (data) => {
+    const msg = {
+      from: data.from,
+      to: data.to,
+      text: data.text,
+      time: Date.now()
+    };
+
+    pushMessage(data.from, data.to, msg);
+
+    const target = users[data.to];
+
+    if (target) {
+      io.to(target.id).emit("chat_message", msg);
+    }
+
+    socket.emit("chat_message", msg);
+  });
+
+  // HISTORY REQUEST
+  socket.on("get_history", ({ userA, userB }) => {
+    const key = roomKey(userA, userB);
+    socket.emit("history", messages[key] || []);
+  });
+
+  // TYPING
   socket.on("typing", ({ from, to }) => {
     const target = users[to];
     if (target) {
@@ -62,35 +101,16 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on("chat_message", (data) => {
-
-    const payload = {
-      from: data.from,
-      to: data.to,
-      text: data.text,
-      time: Date.now()
-    };
-
-    messageBuffer.push(payload);
-    trimBuffer();
-
-    const target = users[data.to];
-
-    if (target) {
-      io.to(target.id).emit("chat_message", payload);
-    }
-
-    socket.emit("chat_message", payload);
-  });
-
+  // DISCONNECT
   socket.on("disconnect", () => {
+    if (!socket.username) return;
 
-    if (socket.username && users[socket.username]) {
+    if (users[socket.username]) {
       users[socket.username].status = "offline";
       users[socket.username].lastSeen = Date.now();
-
-      io.emit("users", users);
     }
+
+    sendUserList();
   });
 });
 
