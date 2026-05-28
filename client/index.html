@@ -23,6 +23,7 @@
       display: flex;
       flex-direction: column;
       box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      overflow: hidden;
     }
 
     .header {
@@ -82,6 +83,12 @@
       padding: 10px 15px;
       cursor: pointer;
     }
+
+    .time {
+      font-size: 10px;
+      opacity: 0.6;
+      margin-top: 3px;
+    }
   </style>
 </head>
 
@@ -102,28 +109,66 @@
 </div>
 
 <script>
+function time() {
+  return new Date().toLocaleTimeString([], {
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+}
+
+function addMsg(text, type) {
+  const chat = document.getElementById("chat");
+
+  chat.innerHTML += `
+    <div class="msg ${type}">
+      ${text}
+      <div class="time">${time()}</div>
+    </div>
+  `;
+
+  chat.scrollTop = chat.scrollHeight;
+}
+
 async function send() {
   const input = document.getElementById("text");
   const msg = input.value.trim();
   if (!msg) return;
 
-  const chat = document.getElementById("chat");
-
-  chat.innerHTML += `<div class="msg me">Jij: ${msg}</div>`;
+  // user message
+  addMsg("Jij: " + msg, "me");
   input.value = "";
 
+  const chat = document.getElementById("chat");
+
+  // typing indicator
+  const typing = document.createElement("div");
+  typing.id = "typing";
+  typing.className = "msg bot";
+  typing.innerHTML = "Bot is aan het typen...";
+  chat.appendChild(typing);
   chat.scrollTop = chat.scrollHeight;
 
-  const res = await fetch("https://buzzimessenger.onrender.com/chat", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ message: msg })
-  });
+  try {
+    const res = await fetch("https://buzzimessenger.onrender.com/chat", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ message: msg })
+    });
 
-  const data = await res.json();
+    const data = await res.json();
 
-  chat.innerHTML += `<div class="msg bot">Bot: ${data.reply}</div>`;
-  chat.scrollTop = chat.scrollHeight;
+    // remove typing
+    document.getElementById("typing")?.remove();
+
+    // bot reply
+    addMsg("Bot: " + data.reply, "bot");
+
+  } catch (err) {
+    document.getElementById("typing")?.remove();
+    addMsg("❌ Server niet bereikbaar", "bot");
+  }
 }
 </script>
 
