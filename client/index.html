@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MSN NEXT LEVEL</title>
+<title>MSN FIXED NEXT LEVEL</title>
 
 <style>
 body {
@@ -12,6 +12,7 @@ body {
   background: #cfe3ff;
   display: flex;
   height: 100vh;
+  overflow: hidden;
 }
 
 /* CONTACTS */
@@ -31,18 +32,6 @@ body {
   position: relative;
 }
 
-.dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  position: absolute;
-  right: 10px;
-  top: 15px;
-}
-
-.online { background: #3ad13a; }
-.offline { background: gray; }
-
 /* CHAT */
 .chatBox {
   flex: 1;
@@ -59,9 +48,10 @@ body {
 
 .chat {
   flex: 1;
-  padding: 10px;
   overflow-y: auto;
+  padding: 10px;
   background: #f9fbff;
+  min-height: 0;
 }
 
 .msg {
@@ -69,17 +59,10 @@ body {
   padding: 6px;
   max-width: 70%;
   border-radius: 6px;
-  font-size: 14px;
 }
 
-.me {
-  background: #d7ebff;
-  margin-left: auto;
-}
-
-.other {
-  background: #eee;
-}
+.me { background: #d7ebff; margin-left: auto; }
+.other { background: #eee; }
 
 .time {
   font-size: 10px;
@@ -90,12 +73,14 @@ body {
 .input {
   display: flex;
   border-top: 1px solid #ccc;
+  flex-shrink: 0;
 }
 
 input {
   flex: 1;
   padding: 10px;
   border: none;
+  font-size: 16px;
 }
 
 button {
@@ -118,30 +103,22 @@ button {
   z-index: 999;
 }
 
-/* TYPING */
-#typing {
-  font-size: 11px;
-  color: #666;
-  padding-left: 8px;
-}
-
-/* UNREAD */
-.user.unread {
-  border-left: 4px solid #2b579a;
-  background: #e6f0ff;
-}
-
-/* MOBILE */
+/* MOBILE FIX (BELANGRIJK) */
 @media (max-width: 768px) {
-  body { flex-direction: column; }
+
+  body {
+    flex-direction: column;
+  }
 
   .left {
     width: 100%;
-    height: 35vh;
+    height: 30vh;
+    border-right: none;
+    border-bottom: 1px solid #2b579a;
   }
 
   .chatBox {
-    height: 65vh;
+    height: 70vh;
   }
 }
 </style>
@@ -166,7 +143,7 @@ button {
 <div class="chatBox">
   <div class="header" id="header">Select chat</div>
   <div class="chat" id="chat"></div>
-  <div id="typing"></div>
+  <div id="typing" style="font-size:11px;padding-left:8px;color:#666;"></div>
 
   <div class="input">
     <input id="msg" placeholder="Typ..." />
@@ -213,14 +190,8 @@ socket.on("users", (users) => {
       <small>${status} - ${data.text}</small>
     `;
 
-    const dot = document.createElement("div");
-    dot.className = "dot " + (data.status === "online" ? "online" : "offline");
-    div.appendChild(dot);
-
     div.onclick = () => {
       active = name;
-      div.classList.remove("unread");
-
       document.getElementById("header").innerText = "Chat met " + name;
 
       socket.emit("get_history", {
@@ -240,23 +211,14 @@ socket.on("history", (msgs) => {
   render();
 });
 
-/* CHAT */
+/* MESSAGE */
 socket.on("chat_message", (msg) => {
   const other = msg.from === me ? msg.to : msg.from;
 
   if (!chats[other]) chats[other] = [];
   chats[other].push(msg);
 
-  if (active !== other) {
-    const el = [...document.querySelectorAll(".user")]
-      .find(u => u.innerText.includes(other));
-    if (el) el.classList.add("unread");
-  }
-
-  if (active === other) {
-    render();
-    nudge();
-  }
+  if (active === other) render();
 });
 
 /* SEND */
@@ -275,27 +237,6 @@ function send() {
   input.value = "";
 }
 
-/* TYPING */
-document.getElementById("msg").addEventListener("input", () => {
-  if (!active) return;
-
-  socket.emit("typing", {
-    from: me,
-    to: active
-  });
-});
-
-socket.on("typing", (d) => {
-  if (d.from === active) {
-    document.getElementById("typing").innerText =
-      d.from + " is typing...";
-
-    setTimeout(() => {
-      document.getElementById("typing").innerText = "";
-    }, 800);
-  }
-});
-
 /* RENDER */
 function render() {
   const chat = document.getElementById("chat");
@@ -306,8 +247,8 @@ function render() {
     div.className = "msg " + (m.from === me ? "me" : "other");
 
     const time = new Date(m.time || Date.now()).toLocaleTimeString([], {
-      hour: '2-digit',
-      minute: '2-digit'
+      hour: "2-digit",
+      minute: "2-digit"
     });
 
     div.innerHTML = `
@@ -319,15 +260,6 @@ function render() {
   });
 
   chat.scrollTop = chat.scrollHeight;
-}
-
-/* NUDGE */
-function nudge() {
-  const box = document.querySelector(".chatBox");
-  if (!box) return;
-
-  box.classList.add("shake");
-  setTimeout(() => box.classList.remove("shake"), 200);
 }
 </script>
 
