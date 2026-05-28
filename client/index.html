@@ -1,85 +1,15 @@
-<!DOCTYPE html>
-<html lang="nl">
-<head>
-<meta charset="UTF-8">
-<title>Chat Test</title>
-
-<style>
-body {
-  font-family: Tahoma;
-  background: #cfe3ff;
-  display: flex;
-  justify-content: center;
-  padding-top: 50px;
-}
-
-.box {
-  width: 500px;
-  height: 500px;
-  background: white;
-  border: 1px solid #2b579a;
-  display: flex;
-  flex-direction: column;
-}
-
-#chat {
-  flex: 1;
-  padding: 10px;
-  overflow-y: auto;
-}
-
-input {
-  padding: 10px;
-  width: 100%;
-  box-sizing: border-box;
-  border: none;
-  border-top: 1px solid #ccc;
-}
-
-.msg {
-  padding: 5px;
-  margin: 4px 0;
-  background: #eee;
-}
-</style>
-</head>
-
-<body>
-
-<div class="box">
-  <div id="chat"></div>
-  <input id="input" placeholder="Typ bericht..." />
-</div>
-
 <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 
 <script>
 const socket = io("https://buzzimessenger.onrender.com");
 
-const chat = document.getElementById("chat");
-const input = document.getElementById("input");
+socket.on("connect", () => {
+  console.log("🟢 CONNECTED FRONTEND:", socket.id);
 
-// SEND
-input.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") {
-    const msg = input.value.trim();
-    if (!msg) return;
-
-    socket.emit("chat_message", msg);
-    input.value = "";
-  }
+  socket.emit("ping_test", "HELLO FROM FRONTEND");
 });
 
-// RECEIVE
-socket.on("chat_message", (msg) => {
-  const div = document.createElement("div");
-  div.className = "msg";
-  div.innerText = msg;
-  chat.appendChild(div);
-
-  chat.scrollTop = chat.scrollHeight;
+socket.on("pong_test", (data) => {
+  console.log("🟣 SERVER RESPONSE:", data);
 });
 </script>
-
-</body>
-</html>

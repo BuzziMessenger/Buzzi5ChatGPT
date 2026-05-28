@@ -6,6 +6,10 @@ const { Server } = require("socket.io");
 const app = express();
 app.use(cors());
 
+app.get("/", (req, res) => {
+  res.send("SERVER OK");
+});
+
 const server = http.createServer(app);
 
 const io = new Server(server, {
@@ -13,15 +17,15 @@ const io = new Server(server, {
 });
 
 io.on("connection", (socket) => {
-  console.log("connected:", socket.id);
+  console.log("🟢 CONNECTED:", socket.id);
 
-  socket.on("chat_message", (msg) => {
-    console.log("msg received:", msg);
+  socket.on("ping_test", (data) => {
+    console.log("📩 PING RECEIVED:", data);
 
-    io.emit("chat_message", msg); // broadcast naar iedereen
+    socket.emit("pong_test", "OK FROM SERVER");
   });
 });
 
 server.listen(process.env.PORT || 3000, () => {
-  console.log("running");
+  console.log("🚀 SERVER RUNNING");
 });
