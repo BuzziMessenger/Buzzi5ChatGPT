@@ -7,58 +7,65 @@
   <style>
     body {
       margin: 0;
-      font-family: Arial;
-      background: linear-gradient(#dfe9f3, #ffffff);
+      font-family: Tahoma, Arial;
+      background: linear-gradient(#cfe3ff, #ffffff);
       display: flex;
       justify-content: center;
       align-items: center;
       height: 100vh;
     }
 
-    .chatbox {
-      width: 420px;
-      height: 520px;
-      background: white;
-      border-radius: 10px;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    .msn {
+      width: 450px;
+      height: 550px;
+      background: #f4f9ff;
+      border: 1px solid #2b579a;
       display: flex;
       flex-direction: column;
-      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
     }
 
     .header {
-      background: #0078d7;
+      background: #2b579a;
       color: white;
-      padding: 12px;
+      padding: 10px;
       font-weight: bold;
     }
 
-    .messages {
+    .status {
+      font-size: 12px;
+      color: #b6ffb6;
+    }
+
+    .chat {
       flex: 1;
       padding: 10px;
       overflow-y: auto;
+      background: white;
     }
 
     .msg {
       margin: 6px 0;
       padding: 6px 10px;
-      border-radius: 6px;
-      max-width: 80%;
+      border-radius: 8px;
+      max-width: 75%;
+      font-size: 14px;
     }
 
     .me {
-      background: #d1e7ff;
+      background: #d7ebff;
       margin-left: auto;
+      text-align: right;
     }
 
     .bot {
-      background: #e9e9e9;
+      background: #eeeeee;
       margin-right: auto;
     }
 
     .input {
       display: flex;
-      border-top: 1px solid #ddd;
+      border-top: 1px solid #ccc;
     }
 
     .input input {
@@ -69,10 +76,10 @@
     }
 
     .input button {
-      padding: 10px 15px;
-      border: none;
-      background: #0078d7;
+      background: #2b579a;
       color: white;
+      border: none;
+      padding: 10px 15px;
       cursor: pointer;
     }
   </style>
@@ -80,10 +87,13 @@
 
 <body>
 
-<div class="chatbox">
-  <div class="header">💬 Buzzi Messenger</div>
+<div class="msn">
+  <div class="header">
+    💬 Buzzi Messenger
+    <div class="status">🟢 Online</div>
+  </div>
 
-  <div id="messages" class="messages"></div>
+  <div id="chat" class="chat"></div>
 
   <div class="input">
     <input id="text" placeholder="Typ bericht..." />
@@ -97,31 +107,23 @@ async function send() {
   const msg = input.value.trim();
   if (!msg) return;
 
-  const box = document.getElementById("messages");
+  const chat = document.getElementById("chat");
 
-  // eigen bericht
-  box.innerHTML += `<div class="msg me">${msg}</div>`;
+  chat.innerHTML += `<div class="msg me">Jij: ${msg}</div>`;
   input.value = "";
 
-  box.scrollTop = box.scrollHeight;
+  chat.scrollTop = chat.scrollHeight;
 
-  try {
-    const res = await fetch("https://buzzimessenger.onrender.com/chat", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ message: msg })
-    });
+  const res = await fetch("https://buzzimessenger.onrender.com/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message: msg })
+  });
 
-    const data = await res.json();
+  const data = await res.json();
 
-    box.innerHTML += `<div class="msg bot">${data.reply}</div>`;
-    box.scrollTop = box.scrollHeight;
-
-  } catch (err) {
-    box.innerHTML += `<div class="msg bot">❌ Server niet bereikbaar</div>`;
-  }
+  chat.innerHTML += `<div class="msg bot">Bot: ${data.reply}</div>`;
+  chat.scrollTop = chat.scrollHeight;
 }
 </script>
 
