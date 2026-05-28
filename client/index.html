@@ -2,7 +2,7 @@
 <html lang="nl">
 <head>
 <meta charset="UTF-8">
-<title>MSN v4</title>
+<title>MSN v4 FIXED</title>
 
 <style>
 body {
@@ -37,7 +37,6 @@ body {
   background: white;
   border: 1px solid #ccc;
   cursor: pointer;
-  position: relative;
 }
 
 .status {
@@ -46,15 +45,24 @@ body {
 }
 
 .badge {
-  position: absolute;
-  right: 6px;
-  top: 6px;
+  float: right;
   background: red;
   color: white;
   font-size: 10px;
-  padding: 2px 5px;
+  padding: 2px 6px;
   border-radius: 10px;
 }
+
+.dot {
+  height: 8px;
+  width: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 5px;
+}
+
+.online { background: green; }
+.offline { background: gray; }
 
 /* RIGHT */
 .right {
@@ -114,18 +122,6 @@ button {
   color: white;
   border: none;
 }
-
-/* online indicator */
-.dot {
-  height: 8px;
-  width: 8px;
-  border-radius: 50%;
-  display: inline-block;
-  margin-right: 5px;
-}
-
-.online { background: green; }
-.offline { background: gray; }
 </style>
 </head>
 
@@ -158,32 +154,44 @@ button {
 <script>
 const socket = io("https://buzzimessenger.onrender.com");
 
-let me = prompt("Username:");
+let me = null;
 let active = null;
 let chats = {};
 let unread = {};
 
-socket.emit("register", me);
+// FIX: login pas na connect
+socket.on("connect", () => {
+  console.log("connected");
 
-// USERS
+  me = prompt("Username:");
+  socket.emit("register", me);
+});
+
+// USERS (FIXED)
 socket.on("users", (users) => {
   const box = document.getElementById("users");
   box.innerHTML = "";
 
+  if (!users) return;
+
   Object.entries(users).forEach(([name, data]) => {
-    if (name === me) return;
+    if (!name || name === me) return;
 
     const div = document.createElement("div");
     div.className = "user";
 
-    const badge = unread[name] ? `<div class="badge">${unread[name]}</div>` : "";
+    const status = data?.status || "offline";
+
+    const badge = unread[name]
+      ? `<div class="badge">${unread[name]}</div>`
+      : "";
 
     div.innerHTML = `
       <div>
-        <span class="dot ${data.status === "online" ? "online" : "offline"}"></span>
+        <span class="dot ${status === "online" ? "online" : "offline"}"></span>
         ${name}
       </div>
-      <div class="status">${data.status}</div>
+      <div class="status">${status}</div>
       ${badge}
     `;
 
@@ -202,9 +210,8 @@ socket.on("users", (users) => {
   });
 });
 
-// MESSAGE
+// CHAT
 socket.on("chat_message", (msg) => {
-
   const other = msg.from === me ? msg.to : msg.from;
 
   if (!chats[other]) chats[other] = [];
@@ -216,7 +223,6 @@ socket.on("chat_message", (msg) => {
 
   if (active !== other) {
     unread[other] = (unread[other] || 0) + 1;
-    playSound();
   }
 
   if (active === other) render();
@@ -227,17 +233,12 @@ socket.on("typing", (data) => {
   if (data.from === active) {
     document.getElementById("typing").innerText =
       data.from + " is aan het typen...";
+
     setTimeout(() => {
       document.getElementById("typing").innerText = "";
     }, 1000);
   }
 });
-
-// SOUND
-function playSound() {
-  const audio = new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg");
-  audio.play();
-}
 
 // SEND
 function send() {
