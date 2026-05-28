@@ -1,3 +1,4 @@
+import socket from './socket'
 import React from 'react'
 import './styles.css'
 
