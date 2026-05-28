@@ -2,11 +2,32 @@
 <html lang="nl">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Buzzi Messenger</title>
+  <title>Buzzi Chat</title>
 </head>
 <body>
-  <div id="root"></div>
-  <script type="module" src="/src/main.jsx"></script>
+  <h1>Buzzi Messenger</h1>
+
+  <input id="msg" placeholder="Typ bericht..." />
+  <button onclick="send()">Send</button>
+
+  <div id="chat"></div>
+
+  <script>
+    async function send() {
+      const msg = document.getElementById("msg").value;
+
+      const res = await fetch("https://YOUR-RENDER-URL.onrender.com/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: msg })
+      });
+
+      const data = await res.json();
+
+      document.getElementById("chat").innerHTML +=
+        "<p><b>Jij:</b> " + msg + "</p>" +
+        "<p><b>Bot:</b> " + data.reply + "</p>";
+    }
+  </script>
 </body>
 </html>

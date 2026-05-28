@@ -1,43 +1,20 @@
-const express = require('express')
-const http = require('http')
-const cors = require('cors')
-const { Server } = require('socket.io')
+const express = require("express");
+const cors = require("cors");
 
-const app = express()
+const app = express();
+app.use(cors());
+app.use(express.json());
 
-app.use(cors())
+app.post("/chat", (req, res) => {
+  const msg = req.body.message;
 
-app.get('/', (req, res) => {
-  res.send('Buzzi Messenger Backend draait 🚀')
-})
+  // simpele reply (later kun je AI toevoegen)
+  res.json({
+    reply: "Ontvangen: " + msg
+  });
+});
 
-const server = http.createServer(app)
-
-const io = new Server(server, {
-  cors: {
-    origin: '*'
-  }
-})
-
-io.on('connection', (socket) => {
-
-  console.log('Gebruiker verbonden:', socket.id)
-
-  socket.on('send_message', (data) => {
-
-    console.log('Nieuw bericht:', data)
-
-    io.emit('receive_message', data)
-  })
-
-  socket.on('disconnect', () => {
-    console.log('Gebruiker disconnected')
-  })
-
-})
-
-const PORT = process.env.PORT || 5000
-
-server.listen(PORT, () => {
-  console.log(`Server draait op poort ${PORT}`)
-})
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log("Server running on port " + PORT);
+});
