@@ -2,51 +2,129 @@
 <html lang="nl">
 <head>
 <meta charset="UTF-8">
-<title>Socket Test</title>
+<title>MSN v2</title>
 
 <style>
 body {
-  font-family: Arial;
+  margin: 0;
+  font-family: Tahoma;
   background: #cfe3ff;
   display: flex;
   justify-content: center;
-  padding-top: 50px;
+  align-items: center;
+  height: 100vh;
 }
 
-.box {
-  width: 500px;
-  height: 500px;
+.app {
+  width: 800px;
+  height: 600px;
+  display: flex;
   background: white;
   border: 1px solid #2b579a;
+}
+
+/* LEFT */
+.left {
+  width: 250px;
+  border-right: 1px solid #2b579a;
+  background: #eaf3ff;
+  padding: 10px;
+}
+
+.user {
+  padding: 6px;
+  margin: 5px 0;
+  background: white;
+  cursor: pointer;
+  border: 1px solid #ccc;
+}
+
+.activeUser {
+  background: #d7ebff;
+}
+
+/* RIGHT */
+.right {
+  flex: 1;
   display: flex;
   flex-direction: column;
 }
 
-#chat {
+.header {
+  background: #2b579a;
+  color: white;
+  padding: 10px;
+}
+
+.chat {
   flex: 1;
   padding: 10px;
   overflow-y: auto;
+  background: #f9fbff;
+}
+
+.msg {
+  margin: 5px 0;
+  padding: 6px;
+  max-width: 70%;
+}
+
+.me {
+  background: #d7ebff;
+  margin-left: auto;
+}
+
+.other {
+  background: #eee;
+}
+
+.system {
+  text-align: center;
+  font-size: 12px;
+  color: gray;
+}
+
+.input {
+  display: flex;
 }
 
 input {
+  flex: 1;
   padding: 10px;
   border: none;
   border-top: 1px solid #ccc;
 }
 
-.msg {
-  background: #eee;
-  margin: 5px;
-  padding: 5px;
+button {
+  padding: 10px;
+  border: none;
+  background: #2b579a;
+  color: white;
 }
 </style>
 </head>
 
 <body>
 
-<div class="box">
-  <div id="chat"></div>
-  <input id="input" placeholder="Typ en druk Enter..." />
+<div class="app">
+
+  <div class="left">
+    <h4>Online</h4>
+    <div id="users"></div>
+  </div>
+
+  <div class="right">
+
+    <div class="header" id="header">Select user</div>
+    <div class="chat" id="chat"></div>
+
+    <div class="input">
+      <input id="input" placeholder="Typ bericht..." />
+      <button onclick="send()">Send</button>
+    </div>
+
+  </div>
+
 </div>
 
 <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
@@ -54,34 +132,97 @@ input {
 <script>
 const socket = io("https://buzzimessenger.onrender.com");
 
-console.log("🟡 FRONTEND LOADED");
+let me = prompt("Username:");
+let activeUser = null;
+let chats = {};
 
-socket.on("connect", () => {
-  console.log("🟢 CONNECTED:", socket.id);
+socket.emit("register", me);
+
+// USERS
+socket.on("users", (list) => {
+  const box = document.getElementById("users");
+  box.innerHTML = "";
+
+  list.forEach(u => {
+    if (u === me) return;
+
+    const div = document.createElement("div");
+    div.className = "user";
+    div.innerText = u;
+
+    if (u === activeUser) div.classList.add("activeUser");
+
+    div.onclick = () => {
+      activeUser = u;
+      document.getElementById("header").innerText = "Chat met " + u;
+
+      if (!chats[u]) chats[u] = [];
+
+      render();
+    };
+
+    box.appendChild(div);
+  });
 });
 
-socket.on("chat_message", (msg) => {
-  console.log("📩 RECEIVED:", msg);
+// CHAT MESSAGE
+socket.on("chat_message", (data) => {
+  const other = data.from === me ? data.to : data.from;
 
-  const div = document.createElement("div");
-  div.className = "msg";
-  div.innerText = msg;
+  if (!chats[other]) chats[other] = [];
 
-  document.getElementById("chat").appendChild(div);
+  chats[other].push({
+    text: `${data.from}: ${data.text}`,
+    type: data.from === me ? "me" : "other"
+  });
+
+  if (activeUser === other) render();
 });
 
-document.getElementById("input").addEventListener("keydown", (e) => {
-  if (e.key === "Enter") {
-    const msg = e.target.value;
-    if (!msg) return;
+// SYSTEM
+socket.on("system_message", (msg) => {
+  if (!chats["system"]) chats["system"] = [];
 
-    console.log("📤 SENDING:", msg);
+  chats["system"].push({
+    text: msg,
+    type: "system"
+  });
 
-    socket.emit("chat_message", msg);
-
-    e.target.value = "";
-  }
+  if (activeUser === "system") render();
 });
+
+// SEND
+function send() {
+  const input = document.getElementById("input");
+  const text = input.value.trim();
+
+  if (!text || !activeUser) return;
+
+  socket.emit("chat_message", {
+    from: me,
+    to: activeUser,
+    text
+  });
+
+  input.value = "";
+}
+
+// RENDER
+function render() {
+  const chat = document.getElementById("chat");
+  chat.innerHTML = "";
+
+  const msgs = chats[activeUser] || [];
+
+  msgs.forEach(m => {
+    const div = document.createElement("div");
+    div.className = "msg " + (m.type || "");
+    div.innerText = m.text;
+    chat.appendChild(div);
+  });
+
+  chat.scrollTop = chat.scrollHeight;
+}
 </script>
 
 </body>
