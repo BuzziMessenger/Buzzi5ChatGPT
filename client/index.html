@@ -122,7 +122,10 @@ let chats = {}; // BELANGRIJK: blijft altijd bestaan
 socket.on("users", (list) => {
 
   const box = document.querySelector(".left");
-  box.innerHTML = "<h4>Contacts</h4>";
+
+  // alleen contact container leegmaken, NIET hele header weggooien
+  const oldContacts = box.querySelectorAll(".contact");
+  oldContacts.forEach(c => c.remove());
 
   list.forEach(u => {
     if (u === me) return;
@@ -131,19 +134,22 @@ socket.on("users", (list) => {
     div.className = "contact";
     div.innerText = u;
 
-    div.onclick = () => {
-  console.log("CLICK CONTACT:", u);
+    div.dataset.user = u;
 
-  currentChat = u;
+    div.onclick = function () {
+      console.log("CLICK:", this.dataset.user);
 
-  document.getElementById("header").innerText = "Chat met " + u;
+      currentChat = this.dataset.user;
 
-  if (!chats[u]) chats[u] = [];
+      document.getElementById("header").innerText =
+        "Chat met " + currentChat;
 
-  console.log("CURRENT CHAT SET TO:", currentChat);
+      if (!chats[currentChat]) {
+        chats[currentChat] = [];
+      }
 
-  render();
-};
+      render();
+    };
 
     box.appendChild(div);
   });
