@@ -29,20 +29,36 @@ const Message = mongoose.model("Message", {
 io.on("connection", (socket) => {
 
   socket.on("register", async ({ user, pass, mode }) => {
+
     if (!user || !pass) {
-      return socket.emit("login_error", "missing");
+      return socket.emit("login_error", "missing_fields");
     }
 
     try {
+
       if (mode === "register") {
         const exists = await User.findOne({ username: user });
-        if (exists) return socket.emit("login_error", "exists");
 
-        await User.create({ username: user, password: pass, status: "online" });
+        if (exists) {
+          return socket.emit("login_error", "user_exists");
+        }
+
+        await User.create({
+          username: user,
+          password: pass,
+          status: "online"
+        });
       }
 
-      const found = await User.findOne({ username: user, password: pass });
-      if (!found) return socket.emit("login_error", "wrong");
+      const found = await User.findOne({ username: user });
+
+      if (!found) {
+        return socket.emit("login_error", "user_not_found");
+      }
+
+      if (found.password !== pass) {
+        return socket.emit("login_error", "wrong_password");
+      }
 
       socket.username = user;
       socket.join(user);
@@ -52,10 +68,14 @@ io.on("connection", (socket) => {
       socket.emit("login_success", { username: user });
 
       const users = await User.find();
-      io.emit("users", users);
+      io.emit("users", users.map(u => ({
+        username: u.username,
+        status: u.status
+      })));
 
     } catch (e) {
-      socket.emit("login_error", "server");
+      console.log(e);
+      socket.emit("login_error", "server_error");
     }
   });
 
@@ -79,5 +99,5 @@ io.on("connection", (socket) => {
 });
 
 server.listen(10000, () => {
-  console.log("BUZZI RUNNING");
+  console.log("BUZZI V2 ONLINE");
 });

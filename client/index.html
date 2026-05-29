@@ -2,67 +2,129 @@
 <html lang="nl">
 <head>
 <meta charset="UTF-8">
-<title>Buzzi Messenger</title>
+<title>Buzzi Messenger V2</title>
 
 <style>
-body{margin:0;font-family:Segoe UI;background:#d7e7ff;height:100vh;overflow:hidden}
 
-#splash{
-  position:fixed;inset:0;
-  background:#2b579a;
+body{
+  margin:0;
+  font-family:Segoe UI;
+  background:#d7e7ff;
+  height:100vh;
+  overflow:hidden;
+}
+
+/* LOGIN */
+#auth{
+  position:fixed;
+  inset:0;
   display:flex;
   justify-content:center;
   align-items:center;
-  flex-direction:column;
-  color:white;
-}
-
-#auth,#app{display:none}
-
-#auth{
-  position:fixed;inset:0;
   background:#1f3f73;
-  justify-content:center;
-  align-items:center;
 }
 
 .card{
   background:white;
   padding:20px;
-  border-radius:10px;
+  border-radius:12px;
   width:280px;
 }
 
+/* APP */
 .app{
+  display:none;
   height:100vh;
   display:flex;
 }
 
-.sidebar{width:250px;background:#f5f8ff}
+/* SIDEBAR */
+.sidebar{
+  width:250px;
+  background:#f5f8ff;
+  overflow:auto;
+}
 
-.header{background:#2b579a;color:white;padding:10px}
+.header{
+  background:#2b579a;
+  color:white;
+  padding:10px;
+}
 
-.user{padding:10px;background:white;margin:5px;cursor:pointer}
+.user{
+  padding:10px;
+  margin:5px;
+  background:white;
+  cursor:pointer;
+}
 
-.chat{flex:1;display:flex;flex-direction:column}
+/* CHAT */
+.chat{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+}
 
-.box{flex:1;overflow:auto;padding:10px;display:flex;flex-direction:column;gap:10px}
+.box{
+  flex:1;
+  overflow:auto;
+  padding:10px;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
 
-.msg{padding:10px;border-radius:10px;max-width:60%}
-.me{background:#cfe6ff;align-self:flex-end}
-.other{background:white}
+.msg{
+  padding:10px;
+  border-radius:12px;
+  max-width:60%;
+}
 
-.input{display:flex;padding:10px;background:white}
-.input input{flex:1;padding:10px}
+.me{
+  background:#cfe6ff;
+  align-self:flex-end;
+}
+
+.other{
+  background:white;
+}
+
+.input{
+  display:flex;
+  padding:10px;
+  background:white;
+}
+
+.input input{
+  flex:1;
+  padding:10px;
+}
+
+/* MOBILE FIX */
+@media (max-width: 768px){
+
+  .app{
+    flex-direction:column;
+  }
+
+  .sidebar{
+    width:100%;
+    display:flex;
+    overflow-x:auto;
+    height:90px;
+  }
+
+  .user{
+    min-width:120px;
+    text-align:center;
+  }
+
+}
+
 </style>
 </head>
 
 <body>
-
-<div id="splash">
-  <h1>Buzzi Messenger</h1>
-  <p>Laden...</p>
-</div>
 
 <div id="auth">
   <div class="card">
@@ -109,58 +171,49 @@ const socket = io("https://buzzimessenger.onrender.com");
 let me = null;
 let active = null;
 
-window.onload = () => {
-
-  setTimeout(() => {
-    document.getElementById("splash").style.display = "none";
-    document.getElementById("auth").style.display = "flex";
-  }, 1200);
-
-};
-
-function login() {
-  socket.emit("register", {
-    user: document.getElementById("user").value,
-    pass: document.getElementById("pass").value,
-    mode: document.getElementById("mode").value
+function login(){
+  socket.emit("register",{
+    user: user.value,
+    pass: pass.value,
+    mode: mode.value
   });
 }
 
-socket.on("login_success", (u) => {
+socket.on("login_success",(u)=>{
   me = u.username;
   document.getElementById("auth").style.display = "none";
   document.getElementById("app").style.display = "flex";
 });
 
-socket.on("login_error", (e) => {
-  alert("Login fout: " + e);
+socket.on("login_error",(e)=>{
+  alert("Login error: " + e);
 });
 
-socket.on("users", (users) => {
+socket.on("users",(users)=>{
   const box = document.getElementById("users");
   box.innerHTML = "";
 
-  users.forEach(u => {
-    if (u.username === me) return;
+  users.forEach(u=>{
+    if(u.username === me) return;
 
     const d = document.createElement("div");
     d.className = "user";
     d.innerText = u.username;
 
-    d.onclick = () => {
+    d.onclick = ()=>{
       active = u.username;
-      socket.emit("get_history", { userA: me, userB: active });
+      socket.emit("get_history",{userA:me,userB:active});
     };
 
     box.appendChild(d);
   });
 });
 
-socket.on("history", (msgs) => {
+socket.on("history",(msgs)=>{
   const box = document.getElementById("box");
   box.innerHTML = "";
 
-  msgs.forEach(m => {
+  msgs.forEach(m=>{
     const d = document.createElement("div");
     d.className = "msg " + (m.from === me ? "me" : "other");
     d.innerText = m.text;
@@ -168,15 +221,15 @@ socket.on("history", (msgs) => {
   });
 });
 
-function send() {
-  socket.emit("chat_message", {
-    from: me,
-    to: active,
-    text: document.getElementById("msg").value,
-    time: Date.now()
+function send(){
+  socket.emit("chat_message",{
+    from:me,
+    to:active,
+    text:msg.value,
+    time:Date.now()
   });
 
-  document.getElementById("msg").value = "";
+  msg.value = "";
 }
 
 </script>
