@@ -139,17 +139,22 @@ body{
 
   html, body {
     height: 100%;
+    margin: 0;
     overflow: hidden;
   }
 
+  /* BELANGRIJK: moderne mobile hoogte */
   #app {
+    display: flex;
     flex-direction: column;
-    height: 100dvh; /* belangrijk voor mobiel */
+    height: 100dvh; /* FIX voor mobile browsers */
+    max-height: 100dvh;
   }
 
+  /* USERS BAR */
   .sidebar {
     width: 100%;
-    height: 80px;
+    height: 70px;
     display: flex;
     flex-direction: row;
     overflow-x: auto;
@@ -159,33 +164,37 @@ body{
   .user {
     min-width: 120px;
     flex-shrink: 0;
-    text-align: center;
-    font-size: 14px;
+    font-size: 13px;
   }
 
+  /* CHAT AREA */
   .chat {
     flex: 1;
     display: flex;
     flex-direction: column;
-    min-height: 0; /* voorkomt “verdwijnen” van input */
+    min-height: 0; /* CRUCIAAL */
   }
 
+  /* MESSAGES */
   .box {
     flex: 1;
     overflow-y: auto;
-    min-height: 0;
-    padding-bottom: 10px;
+    min-height: 0; /* CRUCIAAL */
+    -webkit-overflow-scrolling: touch;
   }
 
+  /* INPUT BLIJFT VAST */
   .input {
     flex-shrink: 0;
-    position: sticky;
+    position: relative;
     bottom: 0;
+    background: white;
   }
 
   .input input {
-    font-size: 16px; /* voorkomt zoom iOS bug */
+    font-size: 16px; /* voorkomt iOS zoom bug */
   }
+
 }
 
 </style>
