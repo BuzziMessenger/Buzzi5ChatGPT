@@ -1,10 +1,8 @@
 <!DOCTYPE html>
-<html lang="nl">
+<html>
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Buzzi Final Core</title>
-
+<title>MSN Clone</title>
 <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 
 <style>
@@ -13,32 +11,26 @@ body{
   font-family:Segoe UI;
   display:flex;
   height:100vh;
+  background:#eaf1ff;
 }
 
-/* USERS */
-#sidebar{
-  width:260px;
-  background:#f4f6ff;
+/* CONTACT LIST */
+#contacts{
+  width:250px;
+  background:#dfe8ff;
   overflow:auto;
+  padding:10px;
 }
 
-.user{
+.contact{
+  background:white;
   padding:10px;
   margin:5px;
-  background:white;
   cursor:pointer;
   border-radius:6px;
 }
 
-.status{
-  font-size:11px;
-  opacity:.7;
-}
-
-.online{color:green}
-.offline{color:gray}
-
-/* CHAT */
+/* CHAT AREA */
 #chat{
   flex:1;
   display:flex;
@@ -49,173 +41,136 @@ body{
   background:#2b579a;
   color:white;
   padding:10px;
-  display:flex;
-  justify-content:space-between;
 }
 
-#messages{
+#msgs{
   flex:1;
-  overflow:auto;
   padding:10px;
+  overflow:auto;
 }
 
 .msg{
   padding:8px;
   margin:5px;
-  border-radius:10px;
-  max-width:70%;
+  border-radius:8px;
+  max-width:60%;
 }
 
-.me{background:#c8f7c5;margin-left:auto}
+.me{background:#c7f7c7;margin-left:auto}
 .other{background:white}
 
 /* INPUT */
 #input{
   display:flex;
+  padding:10px;
   gap:5px;
-  padding:8px;
 }
 
-#msg{
+#input input{
   flex:1;
-  padding:8px;
 }
 
-/* BUZZ */
+/* MSN EFFECTS */
 .buzz{
-  animation: shake .08s infinite;
-  background:#fff3a0;
+  animation:shake .1s infinite;
+  background:#fff59d;
 }
 
 @keyframes shake{
   0%{transform:translate(2px)}
   50%{transform:translate(-2px)}
-  100%{transform:translate(2px)}
 }
 
-/* WINK */
-.wink{
+#wink{
   position:fixed;
   inset:0;
   display:flex;
   justify-content:center;
   align-items:center;
-  font-size:90px;
-  pointer-events:none;
-  animation: pop .6s ease;
-}
-
-@keyframes pop{
-  0%{transform:scale(.2);opacity:0}
-  50%{transform:scale(1.4);opacity:1}
-  100%{transform:scale(1);opacity:0}
-}
-
-/* TYPING */
-#typing{
-  font-size:12px;
-  padding:5px 10px;
-  opacity:.7;
+  font-size:100px;
 }
 </style>
-
 </head>
 
 <body>
 
-<div id="sidebar"></div>
+<div id="contacts"></div>
 
 <div id="chat">
+  <div id="header">MSN Clone</div>
 
-<div id="header">
-  <div>Buzzi Final Core</div>
-  <button onclick="openSettings()">⚙️</button>
-</div>
+  <div id="msgs"></div>
 
-<div id="typing"></div>
-
-<div id="messages"></div>
-
-<div id="input">
-  <input id="msg" placeholder="type message...">
-  <button onclick="send()">Send</button>
-  <button onclick="buzz()">📳</button>
-  <button onclick="wink('😂')">😂</button>
-</div>
-
+  <div id="input">
+    <input id="msg">
+    <button onclick="send()">Send</button>
+    <button onclick="buzz()">Buzz</button>
+    <button onclick="wink('😂')">😂</button>
+  </div>
 </div>
 
 <script>
 
-const socket = io("https://jouw-backend.onrender.com");
+const socket = io();
 
-let me = prompt("username");
+const me = prompt("username");
 let active = null;
 
-// AUTH
-socket.emit("auth",{user:me});
+socket.emit("login", me);
 
-// USERS + ONLINE/OFFLINE FIX
+// USERS
 socket.on("users", list=>{
-  sidebar.innerHTML="";
+  contacts.innerHTML="";
 
   list.forEach(u=>{
     let d=document.createElement("div");
-    d.className="user";
-
-    d.innerHTML=`
-      <b>${u.username}</b>
-      <div class="status ${u.status}">${u.status}</div>
-    `;
-
+    d.className="contact";
+    d.innerHTML=`${u.username} (${u.status})`;
     d.onclick=()=>active=u.username;
-
-    sidebar.appendChild(d);
+    contacts.appendChild(d);
   });
 });
 
-// MESSAGE CORE
-socket.on("msg", m=>{
+// HISTORY
+socket.on("history", data=>{
+  data.forEach(addMsg);
+});
+
+// MSG
+socket.on("msg", addMsg);
+
+function addMsg(m){
   let d=document.createElement("div");
   d.className="msg "+(m.from===me?"me":"other");
   d.innerText=m.text;
+  msgs.appendChild(d);
+}
 
-  messages.appendChild(d);
-  messages.scrollTop=messages.scrollHeight;
-});
-
+// SEND
 function send(){
-  if(!active) return;
-
   socket.emit("msg",{
     from:me,
     to:active,
     text:msg.value
   });
-
   msg.value="";
 }
 
 // BUZZ
 function buzz(){
-  if(!active) return;
-
-  socket.emit("buzz",{from:me,to:active});
-
+  socket.emit("buzz",{to:active});
   document.body.classList.add("buzz");
   setTimeout(()=>document.body.classList.remove("buzz"),300);
 }
 
-socket.on("buzz",()=>buzz());
+socket.on("buzz",buzz);
 
 // WINK
 function wink(e){
-  if(!active) return;
-
   socket.emit("wink",{to:active,emoji:e});
 
   let d=document.createElement("div");
-  d.className="wink";
+  d.id="wink";
   d.innerText=e;
   document.body.appendChild(d);
 
@@ -223,23 +178,6 @@ function wink(e){
 }
 
 socket.on("wink",e=>wink(e));
-
-// TYPING
-msg.addEventListener("input",()=>{
-  if(active) socket.emit("typing",{to:active,from:me});
-});
-
-socket.on("typing",(from)=>{
-  typing.innerText = from + " is typing...";
-  setTimeout(()=>typing.innerText="",1200);
-});
-
-// SETTINGS (LOCKED CORE PLACEHOLDER)
-function openSettings(){
-  alert(
-    "Settings (core locked):\n- status\n- sounds (coming next safe module)\n- UI options (next layer)"
-  );
-}
 
 </script>
 
