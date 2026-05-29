@@ -12,56 +12,74 @@ const io = new Server(server, {
   cors: { origin: "*" }
 });
 
-// USERS STATE
-const users = new Map(); // username -> {id, status}
+/**
+ * USERS STATE (locked core)
+ * username -> { id, status }
+ */
+const users = new Map();
+
+function broadcastUsers(){
+  io.emit("users", Array.from(users.entries()).map(([username, data]) => ({
+    username,
+    status: data.status
+  })));
+}
 
 io.on("connection", (socket) => {
 
-  // AUTH / JOIN
+  // AUTH
   socket.on("auth", ({ user }) => {
-
     socket.user = user;
-    users.set(user, { id: socket.id, status: "online" });
 
-    io.emit("users", Array.from(users.entries()).map(([name, data]) => ({
-      username: name,
-      status: data.status
-    })));
+    users.set(user, {
+      id: socket.id,
+      status: "online"
+    });
+
+    broadcastUsers();
   });
 
-  // DISCONNECT → OFFLINE
+  // DISCONNECT → OFFLINE FIX
   socket.on("disconnect", () => {
-
     if (socket.user) {
-      users.set(socket.user, { id: null, status: "offline" });
+      const u = users.get(socket.user);
+      if (u) {
+        u.status = "offline";
+        u.id = null;
+      }
+    }
+    broadcastUsers();
+  });
+
+  // MESSAGE CORE
+  socket.on("msg", (data) => {
+    const target = users.get(data.to);
+
+    if (target?.id) {
+      io.to(target.id).emit("msg", data);
     }
 
-    io.emit("users", Array.from(users.entries()).map(([name, data]) => ({
-      username: name,
-      status: data.status
-    })));
-  });
-
-  // MESSAGE
-  socket.on("msg", (data) => {
-    io.to(users.get(data.to)?.id).emit("msg", data);
     io.to(socket.id).emit("msg", data);
   });
 
   // TYPING
   socket.on("typing", ({ to, from }) => {
-    io.to(users.get(to)?.id).emit("typing", from);
+    const target = users.get(to);
+    if (target?.id) io.to(target.id).emit("typing", from);
   });
 
   // BUZZ
   socket.on("buzz", ({ to, from }) => {
-    io.to(users.get(to)?.id).emit("buzz", from);
+    const target = users.get(to);
+    if (target?.id) io.to(target.id).emit("buzz", from);
   });
 
   // WINK
   socket.on("wink", ({ to, emoji }) => {
-    io.to(users.get(to)?.id).emit("wink", emoji);
+    const target = users.get(to);
+    if (target?.id) io.to(target.id).emit("wink", emoji);
   });
 
 });
+
 server.listen(process.env.PORT || 10000);
