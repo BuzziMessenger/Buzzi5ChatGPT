@@ -14,7 +14,7 @@ const io = new Server(server, {
   transports: ["polling", "websocket"]
 });
 
-mongoose.connect("YOUR_MONGO_URI");
+mongoose.connect("mongodb+srv://Buzzi:BuzziMessenger@buzzimessenger.yoprloo.mongodb.net/buzzi_db?retryWrites=true&w=majority&appName=BuzziMessenger");
 
 const User = mongoose.model("User", {
   username: { type: String, unique: true },
@@ -48,7 +48,9 @@ io.on("connection", (socket) => {
 
       const found = await User.findOne({ username: user, password: pass });
 
-      if (!found) return socket.emit("login_error", "wrong");
+      if (!found) {
+        return socket.emit("login_error", "wrong");
+      }
 
       socket.username = user;
       socket.join(user);
@@ -57,10 +59,13 @@ io.on("connection", (socket) => {
 
       socket.emit("login_success", { username: user });
 
-      sendUsers();
+      const users = await User.find();
+      io.emit("users", users.map(u => ({
+        username: u.username,
+        status: u.status
+      })));
 
     } catch (e) {
-      console.log(e);
       socket.emit("login_error", "server");
     }
   });
@@ -90,21 +95,11 @@ io.on("connection", (socket) => {
         { username: socket.username },
         { status: "offline" }
       );
-      sendUsers();
     }
   });
-
-  function sendUsers() {
-    User.find().then(users => {
-      io.emit("users", users.map(u => ({
-        username: u.username,
-        status: u.status
-      })));
-    });
-  }
 
 });
 
 server.listen(10000, () => {
-  console.log("BUZZI STABLE READY");
+  console.log("BUZZI STABLE ONLINE");
 });

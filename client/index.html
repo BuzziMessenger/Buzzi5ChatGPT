@@ -5,7 +5,6 @@
 <title>Buzzi Messenger</title>
 
 <style>
-
 body{margin:0;font-family:Segoe UI;background:#d7e7ff;height:100vh;overflow:hidden}
 
 #splash{
@@ -14,8 +13,8 @@ body{margin:0;font-family:Segoe UI;background:#d7e7ff;height:100vh;overflow:hidd
   display:flex;
   justify-content:center;
   align-items:center;
-  color:white;
   flex-direction:column;
+  color:white;
 }
 
 #auth{
@@ -55,9 +54,7 @@ body{margin:0;font-family:Segoe UI;background:#d7e7ff;height:100vh;overflow:hidd
 .other{background:white}
 
 .input{display:flex;padding:10px;background:white}
-
 .input input{flex:1;padding:10px}
-
 </style>
 </head>
 
@@ -70,15 +67,15 @@ body{margin:0;font-family:Segoe UI;background:#d7e7ff;height:100vh;overflow:hidd
 
 <div id="auth">
   <div class="card">
-    <input id="user" placeholder="user">
-    <input id="pass" type="password" placeholder="pass">
+    <input id="user" placeholder="username">
+    <input id="pass" type="password" placeholder="password">
 
     <select id="mode">
       <option value="login">login</option>
       <option value="register">register</option>
     </select>
 
-    <button onclick="auth()">OK</button>
+    <button onclick="auth()">Start</button>
   </div>
 </div>
 
@@ -97,7 +94,7 @@ body{margin:0;font-family:Segoe UI;background:#d7e7ff;height:100vh;overflow:hidd
 
     <div class="input">
       <input id="msg">
-      <button onclick="send()">Send</button>
+      <button onclick="send()">Versturen</button>
     </div>
 
   </div>
@@ -133,10 +130,10 @@ socket.on("login_success",(u)=>{
 });
 
 socket.on("login_error",(e)=>{
-  alert("Login fout: " + e);
+  alert("Login fout: "+e);
 });
 
-socket.on("users",users=>{
+socket.on("users",(users)=>{
   usersBox.innerHTML="";
 
   users.forEach(u=>{
@@ -155,7 +152,16 @@ socket.on("users",users=>{
   });
 });
 
-socket.on("history",render);
+socket.on("history",(msgs)=>{
+  box.innerHTML="";
+
+  msgs.forEach(m=>{
+    const d=document.createElement("div");
+    d.className="msg "+(m.from===me?"me":"other");
+    d.innerText=m.text;
+    box.appendChild(d);
+  });
+});
 
 function send(){
   socket.emit("chat_message",{
@@ -166,17 +172,6 @@ function send(){
   });
 
   msg.value="";
-}
-
-function render(msgs){
-  box.innerHTML="";
-
-  msgs.forEach(m=>{
-    const d=document.createElement("div");
-    d.className="msg "+(m.from===me?"me":"other");
-    d.innerText=m.text;
-    box.appendChild(d);
-  });
 }
 
 </script>
