@@ -3,19 +3,51 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MSN FIXED NEXT LEVEL</title>
+<title>MSN MOBILE FIXED</title>
 
 <style>
-body {
+
+/* =========================
+   BASE RESET (CRUCIAAL FIX)
+========================= */
+
+html, body {
   margin: 0;
-  font-family: Tahoma;
-  background: #cfe3ff;
-  display: flex;
-  height: 100vh;
+  padding: 0;
+  height: 100%;
   overflow: hidden;
+  font-family: Tahoma;
 }
 
-/* CONTACTS */
+/* FIX VOOR MOBIEL VIEWPORT BUG */
+body {
+  height: 100dvh;
+  display: flex;
+  background: #cfe3ff;
+}
+
+/* =========================
+   LOGIN OVERLAY (FIXED)
+========================= */
+
+#login {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100dvh;
+  background: #2b579a;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  color: white;
+  z-index: 9999;
+}
+
+/* =========================
+   CONTACTS
+========================= */
+
 .left {
   width: 280px;
   background: #eaf3ff;
@@ -24,15 +56,10 @@ body {
   overflow-y: auto;
 }
 
-.user {
-  background: white;
-  margin: 6px 0;
-  padding: 8px;
-  cursor: pointer;
-  position: relative;
-}
+/* =========================
+   CHAT
+========================= */
 
-/* CHAT */
 .chatBox {
   flex: 1;
   display: flex;
@@ -90,20 +117,10 @@ button {
   border: none;
 }
 
-/* LOGIN */
-#login {
-  position: fixed;
-  inset: 0;
-  background: #2b579a;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  color: white;
-  z-index: 999;
-}
+/* =========================
+   MOBILE FIX (HIER ZIT DE OPLOSSING)
+========================= */
 
-/* MOBILE FIX (BELANGRIJK) */
 @media (max-width: 768px) {
 
   body {
@@ -121,6 +138,7 @@ button {
     height: 70vh;
   }
 }
+
 </style>
 </head>
 
@@ -143,7 +161,6 @@ button {
 <div class="chatBox">
   <div class="header" id="header">Select chat</div>
   <div class="chat" id="chat"></div>
-  <div id="typing" style="font-size:11px;padding-left:8px;color:#666;"></div>
 
   <div class="input">
     <input id="msg" placeholder="Typ..." />
@@ -154,6 +171,7 @@ button {
 <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 
 <script>
+
 const socket = io("https://buzzimessenger.onrender.com");
 
 let me = null;
@@ -176,19 +194,12 @@ socket.on("users", (users) => {
     if (name === me) return;
 
     const div = document.createElement("div");
-    div.className = "user";
+    div.style.background = "white";
+    div.style.margin = "6px 0";
+    div.style.padding = "8px";
+    div.style.cursor = "pointer";
 
-    let status = data.status;
-
-    if (data.status === "offline" && data.lastSeen) {
-      const mins = Math.floor((Date.now() - data.lastSeen) / 60000);
-      status = `offline (${mins}m ago)`;
-    }
-
-    div.innerHTML = `
-      <b>${name}</b><br>
-      <small>${status} - ${data.text}</small>
-    `;
+    div.innerHTML = `<b>${name}</b><br><small>${data.status} - ${data.text}</small>`;
 
     div.onclick = () => {
       active = name;
@@ -211,7 +222,7 @@ socket.on("history", (msgs) => {
   render();
 });
 
-/* MESSAGE */
+/* CHAT */
 socket.on("chat_message", (msg) => {
   const other = msg.from === me ? msg.to : msg.from;
 
@@ -261,6 +272,7 @@ function render() {
 
   chat.scrollTop = chat.scrollHeight;
 }
+
 </script>
 
 </body>
