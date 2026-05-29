@@ -15,10 +15,10 @@ mongoose.connect("YOUR_MONGO_URI");
 const User = mongoose.model("User", {
   username: { type: String, unique: true },
   password: String,
-  online: Boolean
+  status: { type: String, default: "online" }
 });
 
-const Messages = mongoose.model("Message", {
+const Message = mongoose.model("Message", {
   from: String,
   to: String,
   text: String,
@@ -35,7 +35,7 @@ io.on("connection", (socket) => {
       const exists = await User.findOne({ username: user });
       if (exists) return socket.emit("login_error");
 
-      await User.create({ username: user, password: pass, online: true });
+      await User.create({ username: user, password: pass, status: "online" });
     }
 
     const found = await User.findOne({ username: user, password: pass });
@@ -44,7 +44,7 @@ io.on("connection", (socket) => {
     socket.username = user;
     socket.join(user);
 
-    await User.updateOne({ username: user }, { online: true });
+    await User.updateOne({ username: user }, { status: "online" });
 
     socket.emit("login_success", { username: user });
 
@@ -52,7 +52,7 @@ io.on("connection", (socket) => {
   });
 
   socket.on("chat_message", async (data) => {
-    await Messages.create(data);
+    await Message.create(data);
 
     io.to(data.to).emit("chat_message", data);
     io.to(data.from).emit("chat_message", data);
@@ -60,7 +60,7 @@ io.on("connection", (socket) => {
 
   socket.on("get_history", async ({ userA, userB }) => {
 
-    const msgs = await Messages.find({
+    const msgs = await Message.find({
       $or: [
         { from: userA, to: userB },
         { from: userB, to: userA }
@@ -70,17 +70,14 @@ io.on("connection", (socket) => {
     socket.emit("history", msgs);
   });
 
-  socket.on("typing", ({ from, to }) => {
-    io.to(to).emit("typing", { from });
-  });
-
-  socket.on("stop_typing", ({ from, to }) => {
-    io.to(to).emit("stop_typing", { from });
+  socket.on("set_status", async ({ user, status }) => {
+    await User.updateOne({ username: user }, { status });
+    sendUsers();
   });
 
   socket.on("disconnect", async () => {
     if (socket.username) {
-      await User.updateOne({ username: socket.username }, { online: false });
+      await User.updateOne({ username: socket.username }, { status: "offline" });
       sendUsers();
     }
   });
@@ -89,11 +86,11 @@ io.on("connection", (socket) => {
     User.find().then(users => {
       io.emit("users", users.map(u => ({
         username: u.username,
-        status: u.online ? "online" : "offline"
+        status: u.status
       })));
     });
   }
 
 });
 
-server.listen(10000, () => console.log("BUZZI FINAL POLISH READY"));
+server.listen(10000, () => console.log("BUZZI FINAL POLISH RUNNING"));

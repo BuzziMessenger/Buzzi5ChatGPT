@@ -17,27 +17,45 @@ body{margin:0;font-family:Segoe UI;background:#d7e7ff;height:100vh;overflow:hidd
   position:fixed;inset:0;
   background:#2b579a;
   display:flex;
-  flex-direction:column;
   justify-content:center;
   align-items:center;
   color:white;
+  flex-direction:column;
   z-index:999;
 }
 
 /* AUTH */
-#auth{display:none;position:fixed;inset:0;background:#1f3f73;justify-content:center;align-items:center}
+#auth{
+  position:fixed;inset:0;
+  background:#1f3f73;
+  display:none;
+  justify-content:center;
+  align-items:center;
+  z-index:998;
+}
+
 .card{background:white;padding:20px;border-radius:12px;width:320px}
 
 /* APP */
 .app{display:none;height:100vh;display:flex}
 
+/* SIDEBAR */
 .sidebar{width:250px;background:#f5f8ff;border-right:1px solid #ccc}
 .header{background:#2b579a;color:white;padding:10px}
 
-.user{display:flex;align-items:center;padding:10px;cursor:pointer;margin:5px;background:white;border-radius:10px}
+.user{
+  display:flex;
+  align-items:center;
+  padding:10px;
+  margin:5px;
+  background:white;
+  border-radius:10px;
+  cursor:pointer;
+}
 
 .dot{width:8px;height:8px;border-radius:50%;margin-left:auto}
 .online{background:green}
+.away{background:orange}
 .offline{background:gray}
 
 /* CHAT */
@@ -45,21 +63,56 @@ body{margin:0;font-family:Segoe UI;background:#d7e7ff;height:100vh;overflow:hidd
 
 .box{flex:1;overflow:auto;padding:10px;display:flex;flex-direction:column;gap:6px}
 
-.msg{padding:10px;border-radius:10px;max-width:70%}
+.msg{
+  padding:10px;
+  border-radius:10px;
+  max-width:70%;
+}
+
 .me{background:#cfe6ff;align-self:flex-end}
 .other{background:white}
 
-.input{display:flex;padding:10px;background:white}
+/* INPUT */
+.input{
+  display:flex;
+  padding:10px;
+  background:white;
+  position:relative;
+}
 
-.input input{flex:1;padding:10px;border-radius:20px}
+.input input{
+  flex:1;
+  padding:10px;
+  border-radius:20px;
+}
 
-.input button{width:110px;margin-left:10px}
+.input button{
+  width:110px;
+  margin-left:10px;
+}
+
+/* EMOJI */
+#emojiBox{
+  position:absolute;
+  bottom:60px;
+  left:10px;
+  background:white;
+  padding:10px;
+  border-radius:10px;
+  display:none;
+  box-shadow:0 2px 10px rgba(0,0,0,0.2);
+}
 
 /* SETTINGS */
 #settingsPanel{
-  position:fixed;top:50px;right:10px;
-  background:white;padding:10px;border-radius:10px;
-  display:none
+  position:fixed;
+  top:50px;
+  right:10px;
+  background:white;
+  padding:10px;
+  border-radius:10px;
+  display:none;
+  z-index:999;
 }
 
 </style>
@@ -70,12 +123,14 @@ body{margin:0;font-family:Segoe UI;background:#d7e7ff;height:100vh;overflow:hidd
 <!-- SPLASH -->
 <div id="splash">
   <h1>💬 Buzzi Messenger</h1>
+  <p>Loading...</p>
 </div>
 
 <!-- AUTH -->
 <div id="auth">
   <div class="card">
     <h3>Login / Register</h3>
+
     <input id="user" placeholder="username">
     <input id="pass" type="password" placeholder="password">
 
@@ -90,11 +145,25 @@ body{margin:0;font-family:Segoe UI;background:#d7e7ff;height:100vh;overflow:hidd
 
 <!-- SETTINGS -->
 <div id="settingsPanel">
-  <input type="file" id="avatarInput">
-  <button onclick="saveAvatar()">Opslaan</button>
+
+  <h4>Avatar</h4>
+  <div>
+    <span onclick="setAvatar('🙂')">🙂</span>
+    <span onclick="setAvatar('😎')">😎</span>
+    <span onclick="setAvatar('🔥')">🔥</span>
+    <span onclick="setAvatar('💬')">💬</span>
+  </div>
+
+  <h4>Status</h4>
+  <select onchange="setStatus(this.value)">
+    <option value="online">Online</option>
+    <option value="away">Away</option>
+    <option value="offline">Offline</option>
+  </select>
+
 </div>
 
-<button onclick="toggleSettings()" style="position:fixed;top:10px;right:10px">⚙</button>
+<button onclick="toggleSettings()" style="position:fixed;top:10px;right:10px;z-index:1000">⚙</button>
 
 <!-- APP -->
 <div class="app" id="app">
@@ -111,8 +180,16 @@ body{margin:0;font-family:Segoe UI;background:#d7e7ff;height:100vh;overflow:hidd
     <div class="box" id="box"></div>
 
     <div class="input">
-      <input id="msg" oninput="typing()" placeholder="Typ bericht...">
+
+      <button onclick="toggleEmoji()">😊</button>
+
+      <div id="emojiBox">
+        😄 😂 ❤️ 👍 🔥 😎 🎉 💬 😢 😡
+      </div>
+
+      <input id="msg" placeholder="Typ bericht..." oninput="typing()">
       <button onclick="send()">Versturen</button>
+
     </div>
 
   </div>
@@ -128,9 +205,6 @@ const socket = io("https://buzzimessenger.onrender.com");
 let me=null;
 let active=null;
 let typingTimeout;
-
-/* SOUND */
-const sound = new Audio("https://actions.google.com/sounds/v1/notifications/pling.ogg");
 
 /* SPLASH */
 setTimeout(()=>{
@@ -151,7 +225,6 @@ socket.on("login_success",(u)=>{
   me=u.username;
   auth.style.display="none";
   app.style.display="flex";
-  enablePush();
 });
 
 /* USERS */
@@ -165,8 +238,12 @@ socket.on("users",users=>{
     const saved = localStorage.getItem("avatar_"+u.username);
 
     const avatar = saved
-      ? `<img src="${saved}" style="width:28px;height:28px;border-radius:50%">`
+      ? `<div style="width:28px;height:28px;border-radius:50%;background:#2b579a;color:white;display:flex;align-items:center;justify-content:center">${saved}</div>`
       : `<div style="width:28px;height:28px;border-radius:50%;background:#2b579a;color:white;display:flex;align-items:center;justify-content:center">${u.username[0]}</div>`;
+
+    const color =
+      u.status==="online"?"green":
+      u.status==="away"?"orange":"gray";
 
     const d=document.createElement("div");
     d.className="user";
@@ -174,7 +251,7 @@ socket.on("users",users=>{
     d.innerHTML=`
       ${avatar}
       <span style="margin-left:8px">${u.username}</span>
-      <div class="dot ${u.status}"></div>
+      <div class="dot" style="background:${color}"></div>
     `;
 
     d.onclick=()=>{
@@ -189,10 +266,8 @@ socket.on("users",users=>{
 
 /* CHAT */
 socket.on("chat_message",(m)=>{
-  sound.play();
-
   if(Notification.permission==="granted"){
-    new Notification("Buzzi", { body: m.text });
+    new Notification("Buzzi",{body:m.text});
   }
 
   if(active){
@@ -202,7 +277,6 @@ socket.on("chat_message",(m)=>{
 
 socket.on("history",render);
 
-/* SEND */
 function send(){
   if(!msg.value||!active) return;
 
@@ -228,15 +302,12 @@ function typing(){
 /* RENDER */
 function render(msgs){
   box.innerHTML="";
-
   msgs.forEach(m=>{
     const d=document.createElement("div");
     d.className="msg "+(m.from===me?"me":"other");
     d.innerText=m.text;
     box.appendChild(d);
   });
-
-  box.scrollTop=box.scrollHeight;
 }
 
 /* SETTINGS */
@@ -245,24 +316,23 @@ function toggleSettings(){
     settingsPanel.style.display==="block"?"none":"block";
 }
 
-function saveAvatar(){
-  const file = avatarInput.files[0];
-  if(!file) return;
-
-  const r = new FileReader();
-  r.onload = e=>{
-    localStorage.setItem("avatar_"+me, e.target.result);
-    alert("Opgeslagen");
-  };
-  r.readAsDataURL(file);
+function setAvatar(icon){
+  localStorage.setItem("avatar_"+me, icon);
 }
 
-/* PUSH */
-async function enablePush(){
-  if("Notification" in window){
-    await Notification.requestPermission();
-  }
+function setStatus(status){
+  socket.emit("set_status",{user:me,status});
 }
+
+/* EMOJI */
+function toggleEmoji(){
+  const b=document.getElementById("emojiBox");
+  b.style.display=b.style.display==="block"?"none":"block";
+}
+
+document.getElementById("emojiBox").onclick=(e)=>{
+  if(e.target.innerText) msg.value+=e.target.innerText;
+};
 
 </script>
 
