@@ -12,45 +12,56 @@ const io = new Server(server, {
   cors: { origin: "*" }
 });
 
-// state (simple memory for V20 stability)
-const users = new Map();
+// USERS STATE
+const users = new Map(); // username -> {id, status}
 
 io.on("connection", (socket) => {
 
+  // AUTH / JOIN
   socket.on("auth", ({ user }) => {
-    socket.user = user;
-    users.set(user, socket.id);
 
-    io.emit("users", Array.from(users.keys()));
+    socket.user = user;
+    users.set(user, { id: socket.id, status: "online" });
+
+    io.emit("users", Array.from(users.entries()).map(([name, data]) => ({
+      username: name,
+      status: data.status
+    })));
   });
 
-  socket.on("msg", (data) => {
-    const target = users.get(data.to);
-    if (target) io.to(target).emit("msg", data);
+  // DISCONNECT → OFFLINE
+  socket.on("disconnect", () => {
 
+    if (socket.user) {
+      users.set(socket.user, { id: null, status: "offline" });
+    }
+
+    io.emit("users", Array.from(users.entries()).map(([name, data]) => ({
+      username: name,
+      status: data.status
+    })));
+  });
+
+  // MESSAGE
+  socket.on("msg", (data) => {
+    io.to(users.get(data.to)?.id).emit("msg", data);
     io.to(socket.id).emit("msg", data);
   });
 
+  // TYPING
   socket.on("typing", ({ to, from }) => {
-    const target = users.get(to);
-    if (target) io.to(target).emit("typing", from);
+    io.to(users.get(to)?.id).emit("typing", from);
   });
 
+  // BUZZ
   socket.on("buzz", ({ to, from }) => {
-    const target = users.get(to);
-    if (target) io.to(target).emit("buzz", from);
+    io.to(users.get(to)?.id).emit("buzz", from);
   });
 
+  // WINK
   socket.on("wink", ({ to, emoji }) => {
-    const target = users.get(to);
-    if (target) io.to(target).emit("wink", emoji);
-  });
-
-  socket.on("media", ({ to, file }) => {
-    const target = users.get(to);
-    if (target) io.to(target).emit("media", file);
+    io.to(users.get(to)?.id).emit("wink", emoji);
   });
 
 });
-
 server.listen(process.env.PORT || 10000);

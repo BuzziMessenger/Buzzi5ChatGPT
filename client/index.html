@@ -2,38 +2,82 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Buzzi V20</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Buzzi V11.1</title>
+
 <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 
 <style>
 body{margin:0;font-family:Segoe UI;display:flex;height:100vh}
-#users{width:250px;background:#f4f6ff;overflow:auto}
+
+#sidebar{width:260px;background:#f4f6ff;overflow:auto}
+.user{padding:10px;margin:5px;background:white;cursor:pointer}
+
+.status{
+  font-size:10px;
+  opacity:.6;
+}
+
+.online{color:green}
+.offline{color:gray}
+
 #chat{flex:1;display:flex;flex-direction:column}
-.msg{padding:8px;margin:5px;border-radius:10px;max-width:70%}
+
+#header{
+  background:#2b579a;
+  color:white;
+  padding:10px;
+  display:flex;
+  justify-content:space-between;
+}
+
+#messages{flex:1;overflow:auto;padding:10px}
+
+.msg{
+  padding:8px;
+  margin:5px;
+  border-radius:10px;
+  max-width:70%;
+}
+
 .me{background:#c8f7c5;margin-left:auto}
-#msgs{flex:1;overflow:auto;padding:10px}
-#input{display:flex}
-#input input{flex:1}
-.buzz{animation:shake .1s infinite;background:#fff3a0}
+.other{background:white}
+
+#input{display:flex;padding:8px;gap:5px}
+#msg{flex:1;padding:8px}
+
+/* BUZZ */
+.buzz{animation:shake .08s infinite;background:#fff3a0}
 @keyframes shake{0%{transform:translate(2px)}50%{transform:translate(-2px)}}
-.wink{position:fixed;inset:0;display:flex;justify-content:center;align-items:center;font-size:80px}
+
+/* WINK */
+.wink{
+  position:fixed;inset:0;
+  display:flex;justify-content:center;align-items:center;
+  font-size:90px;
+}
 </style>
 
 </head>
 
 <body>
 
-<div id="users"></div>
+<div id="sidebar"></div>
 
 <div id="chat">
 
-<div id="msgs"></div>
+<div id="header">
+  <div>Buzzi Messenger</div>
+  <button onclick="openSettings()">⚙️</button>
+</div>
+
+<div id="messages"></div>
 
 <div id="input">
-<input id="msg">
-<button onclick="send()">Send</button>
-<button onclick="buzz()">📳</button>
-<button onclick="wink('😂')">😂</button>
+  <input id="msg">
+  <button onclick="send()">Send</button>
+  <button onclick="buzz()">📳</button>
+  <button onclick="wink('😂')">😂</button>
 </div>
 
 </div>
@@ -42,28 +86,39 @@ body{margin:0;font-family:Segoe UI;display:flex;height:100vh}
 
 const socket = io("https://jouw-backend.onrender.com");
 
-let me = prompt("user");
+let me = prompt("username");
 let active;
 
+// AUTH
 socket.emit("auth",{user:me});
 
+// USERS + ONLINE/OFFLINE
 socket.on("users", list=>{
-  users.innerHTML="";
+  sidebar.innerHTML="";
+
   list.forEach(u=>{
-    if(u===me) return;
     let d=document.createElement("div");
-    d.innerText=u;
-    d.onclick=()=>active=u;
-    users.appendChild(d);
+    d.className="user";
+
+    d.innerHTML = `
+      <b>${u.username}</b>
+      <div class="status ${u.status}">${u.status}</div>
+    `;
+
+    d.onclick=()=>active=u.username;
+
+    sidebar.appendChild(d);
   });
 });
 
+// MESSAGES
 socket.on("msg", m=>{
   let d=document.createElement("div");
-  d.className="msg "+(m.from===me?"me":"");
+  d.className="msg "+(m.from===me?"me":"other");
   d.innerText=m.text;
-  msgs.appendChild(d);
-  msgs.scrollTop=msgs.scrollHeight;
+
+  messages.appendChild(d);
+  messages.scrollTop=messages.scrollHeight;
 });
 
 function send(){
@@ -71,31 +126,38 @@ function send(){
   msg.value="";
 }
 
+// BUZZ
 function buzz(){
   socket.emit("buzz",{from:me,to:active});
   document.body.classList.add("buzz");
   setTimeout(()=>document.body.classList.remove("buzz"),300);
 }
 
+socket.on("buzz",()=>buzz());
+
+// WINK
 function wink(e){
   socket.emit("wink",{to:active,emoji:e});
+
   let d=document.createElement("div");
   d.className="wink";
   d.innerText=e;
   document.body.appendChild(d);
+
   setTimeout(()=>d.remove(),800);
 }
 
-socket.on("buzz",()=>buzz());
 socket.on("wink",e=>wink(e));
 
-socket.on("typing",f=>{
-  console.log(f+" typing...");
-});
-
+// TYPING
 msg.addEventListener("input",()=>{
   socket.emit("typing",{to:active,from:me});
 });
+
+// SETTINGS (basic UI placeholder)
+function openSettings(){
+  alert("Settings: geluid / notificaties / status (V11.1 base)");
+}
 
 </script>
 
