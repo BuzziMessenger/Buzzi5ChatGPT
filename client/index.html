@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MSN APP MODE V2</title>
+<title>MSN PRO ULTRA</title>
 
 <style>
 
@@ -53,22 +53,30 @@ body {
   padding: 10px;
 }
 
+/* USER */
 .user {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   padding: 10px;
   margin: 5px;
   background: white;
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
-  position: relative;
 }
 
+.user img {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+}
+
+/* STATUS DOT */
 .dot {
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  position: absolute;
-  right: 10px;
-  top: 15px;
+  margin-left: auto;
 }
 
 .online { background: #3ad13a; }
@@ -79,7 +87,6 @@ body {
   flex: 1;
   display: flex;
   flex-direction: column;
-  min-height: 0;
 }
 
 .chat-header {
@@ -101,6 +108,7 @@ body {
   border-radius: 10px;
   max-width: 70%;
   font-size: 14px;
+  white-space: pre-wrap;
 }
 
 .me {
@@ -116,7 +124,6 @@ body {
 .input {
   display: flex;
   border-top: 1px solid #ccc;
-  background: white;
 }
 
 input {
@@ -133,20 +140,25 @@ button {
   border: none;
 }
 
-/* TYPING */
+/* typing */
 #typing {
   font-size: 11px;
-  padding: 5px 10px;
   color: #666;
+  padding: 5px 10px;
 }
 
-/* UNREAD */
-.unread {
-  border-left: 4px solid #2b579a;
-  background: #e6f0ff;
+/* WINK */
+@keyframes wink {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); background: #fff6a6; }
+  100% { transform: scale(1); }
 }
 
-/* MOBILE FIX */
+.wink {
+  animation: wink 0.3s;
+}
+
+/* MOBILE SAFE */
 @media (max-width: 768px) {
   .sidebar { width: 40%; }
   .chat-area { width: 60%; }
@@ -158,7 +170,7 @@ button {
 <body>
 
 <div id="login">
-  <h2>MSN V2 LOGIN</h2>
+  <h2>MSN PRO ULTRA LOGIN</h2>
   <input id="name" placeholder="Username">
   <button onclick="login()">Start</button>
 </div>
@@ -197,6 +209,15 @@ let chats = {};
 const sndSend = new Audio("https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3");
 const sndRecv = new Audio("https://assets.mixkit.co/active_storage/sfx/2356/2356-preview.mp3");
 
+/* notifications */
+function notify(msg) {
+  if (Notification.permission === "granted") {
+    new Notification("MSN Message", { body: msg });
+  }
+}
+
+Notification.requestPermission();
+
 /* login */
 function login() {
   me = document.getElementById("name").value || ("User"+Math.floor(Math.random()*1000));
@@ -204,7 +225,17 @@ function login() {
   socket.emit("register", me);
 }
 
-/* users */
+/* EMOTES */
+function emote(t) {
+  return t
+    .replace(/:\)/g,"😊")
+    .replace(/;\)/g,"😉")
+    .replace(/:D/g,"😄")
+    .replace(/:P/g,"😛")
+    .replace(/:<3/g,"❤️");
+}
+
+/* USERS */
 socket.on("users", (users) => {
   const box = document.getElementById("users");
   box.innerHTML = "";
@@ -216,18 +247,16 @@ socket.on("users", (users) => {
     div.className = "user";
 
     div.innerHTML = `
-      <b>${name}</b><br>
-      <small>${data.status} - ${data.text}</small>
+      <img src="${data.avatar}">
+      <div>
+        <b>${name}</b><br>
+        <small>${data.status}</small>
+      </div>
+      <div class="dot ${data.status}"></div>
     `;
-
-    const dot = document.createElement("div");
-    dot.className = "dot " + (data.status === "online" ? "online" : "offline");
-    div.appendChild(dot);
 
     div.onclick = () => {
       active = name;
-      div.classList.remove("unread");
-
       document.getElementById("header").innerText = "Chat met " + name;
 
       socket.emit("get_history", {
@@ -255,14 +284,12 @@ socket.on("chat_message", (msg) => {
   chats[other].push(msg);
 
   sndRecv.play();
+  notify(msg.text);
 
-  if (active !== other) {
-    const el = [...document.querySelectorAll(".user")]
-      .find(u => u.innerText.includes(other));
-    if (el) el.classList.add("unread");
+  if (active === other) {
+    render();
+    wink();
   }
-
-  if (active === other) render();
 });
 
 /* typing */
@@ -289,9 +316,11 @@ socket.on("typing", (d) => {
 /* send */
 function send() {
   const input = document.getElementById("msg");
-  const text = input.value.trim();
+  let text = input.value.trim();
 
   if (!text || !active) return;
+
+  text = emote(text);
 
   socket.emit("chat_message", {
     from: me,
@@ -317,6 +346,15 @@ function render() {
   });
 
   chat.scrollTop = chat.scrollHeight;
+}
+
+/* wink */
+function wink() {
+  const box = document.querySelector(".chat-area");
+  if (!box) return;
+
+  box.classList.add("wink");
+  setTimeout(() => box.classList.remove("wink"), 300);
 }
 
 </script>

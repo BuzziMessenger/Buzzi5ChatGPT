@@ -30,10 +30,19 @@ io.on("connection", (socket) => {
       id: socket.id,
       status: "online",
       text: "Available",
+      avatar: `https://api.dicebear.com/7.x/pixel-art/svg?seed=${name}`,
       lastSeen: null
     };
 
     io.emit("users", users);
+  });
+
+  socket.on("set_status", ({ user, status, text }) => {
+    if (users[user]) {
+      users[user].status = status;
+      users[user].text = text || users[user].text;
+      io.emit("users", users);
+    }
   });
 
   socket.on("chat_message", (msg) => {
@@ -61,7 +70,6 @@ io.on("connection", (socket) => {
     socket.emit("history", messages[key(userA, userB)] || []);
   });
 
-  /* 🟢 V2: typing */
   socket.on("typing", ({ from, to }) => {
     const target = users[to];
     if (target) {
@@ -81,4 +89,4 @@ io.on("connection", (socket) => {
   });
 });
 
-server.listen(3000, () => console.log("MSN V2 RUNNING"));
+server.listen(3000, () => console.log("MSN PRO ULTRA RUNNING"));
