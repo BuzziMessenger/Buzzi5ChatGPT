@@ -180,6 +180,8 @@ button.send {
 <script>
 
 const socket = io("https://buzzimessenger.onrender.com");
+  transports: ["websocket", "polling"]
+});
 
 let me=null;
 let active=null;

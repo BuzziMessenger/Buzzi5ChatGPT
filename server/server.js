@@ -8,14 +8,35 @@ const mongoose = require("mongoose");
 const bcrypt = require("bcrypt");
 
 const app = express();
-app.use(cors());
-
-const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: "*" } });
 
 /* =========================
-   MONGOOSE MODELS
+   CORS FIX (EXPRESS)
 ========================= */
+app.use(cors({
+  origin: "*",
+  methods: ["GET", "POST"]
+}));
+
+const server = http.createServer(app);
+
+/* =========================
+   SOCKET.IO FIX (BELANGRIJK)
+========================= */
+const io = new Server(server, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"],
+    credentials: true
+  },
+  transports: ["websocket", "polling"]
+});
+
+/* =========================
+   MONGODB
+========================= */
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => console.log("MongoDB connected"))
+  .catch(err => console.log("MongoDB error:", err));
 
 const userSchema = new mongoose.Schema({
   name: String,
@@ -35,18 +56,11 @@ const User = mongoose.model("User", userSchema);
 const Message = mongoose.model("Message", messageSchema);
 
 /* =========================
-   DB CONNECT
-========================= */
-
-mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log("MongoDB connected"))
-  .catch(err => console.log(err));
-
-/* =========================
    SOCKET LOGIC
 ========================= */
-
 io.on("connection", (socket) => {
+
+  console.log("user connected");
 
   /* LOGIN / REGISTER */
   socket.on("register", async ({ user, pass }) => {
@@ -66,7 +80,10 @@ io.on("connection", (socket) => {
 
     const ok = await bcrypt.compare(pass, dbUser.password);
 
-    if (!ok) return socket.emit("login_fail");
+    if (!ok) {
+      socket.emit("login_fail");
+      return;
+    }
 
     socket.name = user;
 
@@ -85,7 +102,7 @@ io.on("connection", (socket) => {
     socket.emit("users", users);
   });
 
-  /* CHAT */
+  /* CHAT MESSAGE */
   socket.on("chat_message", async (msg) => {
 
     const saved = await Message.create({
@@ -119,20 +136,18 @@ io.on("connection", (socket) => {
       { name: socket.name },
       { status: "offline" }
     );
-const io = new Server(server, {
-  cors: {
-    origin: "*",
-    methods: ["GET", "POST"],
-    credentials: true
-  },
-  transports: ["websocket", "polling"]
-});
+
     const users = await User.find({});
     io.emit("users", users);
   });
 
 });
 
-server.listen(process.env.PORT, () => {
-  console.log("BUZZI v9 RUNNING");
+/* =========================
+   START SERVER (RENDER FIX)
+========================= */
+const PORT = process.env.PORT || 3000;
+
+server.listen(PORT, "0.0.0.0", () => {
+  console.log("BUZZI FIXED SERVER RUNNING ON PORT", PORT);
 });
