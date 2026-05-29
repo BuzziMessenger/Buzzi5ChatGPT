@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Buzzi Messenger v5 CLEAN</title>
+<title>Buzzi Stable Core v1</title>
 
 <style>
 
@@ -46,18 +46,18 @@ button {
   border:none;
 }
 
+.error {
+  color:red;
+  font-size:12px;
+  min-height:16px;
+}
+
 .switch {
   text-align:center;
   margin-top:10px;
   font-size:12px;
   cursor:pointer;
   color:#2b579a;
-}
-
-.error {
-  color:red;
-  font-size:12px;
-  min-height:16px;
 }
 
 /* APP */
@@ -126,18 +126,14 @@ button {
 <div id="auth">
   <div class="card">
 
-    <h3 id="title">Login</h3>
+    <h3>Login</h3>
 
     <input id="user" placeholder="Username">
     <input id="pass" type="password" placeholder="Password">
 
-    <button onclick="auth()">Login</button>
+    <button onclick="auth()">Login / Register</button>
 
     <div class="error" id="error"></div>
-
-    <div class="switch" onclick="toggleMode()">
-      Nog geen account? Register hier
-    </div>
 
   </div>
 </div>
@@ -172,32 +168,10 @@ const socket = io("https://buzzimessenger.onrender.com", {
 
 let me = null;
 let active = null;
-let mode = "login";
-
-/* SWITCH */
-function toggleMode(){
-  const t = document.getElementById("title");
-  const btn = document.querySelector("button");
-  const sw = document.querySelector(".switch");
-  const err = document.getElementById("error");
-
-  err.innerText = "";
-
-  if(mode === "login"){
-    mode = "register";
-    t.innerText = "Register";
-    btn.innerText = "Create account";
-    sw.innerText = "Al account? Login hier";
-  } else {
-    mode = "login";
-    t.innerText = "Login";
-    btn.innerText = "Login";
-    sw.innerText = "Nog geen account? Register hier";
-  }
-}
 
 /* AUTH */
 function auth(){
+
   const user = document.getElementById("user").value;
   const pass = document.getElementById("pass").value;
 
@@ -211,7 +185,7 @@ function auth(){
 
 /* SUCCESS */
 socket.on("login_success", (u) => {
-  me = u.name;
+  me = u.username;
 
   document.getElementById("auth").style.display = "none";
   document.getElementById("app").style.display = "flex";
@@ -224,24 +198,26 @@ socket.on("login_fail", () => {
 
 /* USERS */
 socket.on("users", (users) => {
+
   const box = document.getElementById("users");
   box.innerHTML = "";
 
   users.forEach(u => {
-    if(u.name === me) return;
+    if(u.username === me) return;
 
     const d = document.createElement("div");
     d.className = "user";
-    d.innerText = u.name;
+    d.innerText = u.username;
 
     d.onclick = () => {
-      active = u.name;
-      socket.emit("get_history", { userA: me, userB: u.name });
-      document.getElementById("chatTitle").innerText = "Chat met " + u.name;
+      active = u.username;
+      socket.emit("get_history", { userA: me, userB: u.username });
+      document.getElementById("chatTitle").innerText = "Chat met " + u.username;
     };
 
     box.appendChild(d);
   });
+
 });
 
 /* HISTORY */
@@ -258,8 +234,8 @@ socket.on("chat_message", () => {
 
 /* SEND */
 function send(){
-  const i = document.getElementById("msg");
 
+  const i = document.getElementById("msg");
   if(!i.value || !active) return;
 
   socket.emit("chat_message", {
@@ -273,6 +249,7 @@ function send(){
 
 /* RENDER */
 function render(msgs){
+
   const box = document.getElementById("box");
   box.innerHTML = "";
 
@@ -282,6 +259,7 @@ function render(msgs){
     d.innerText = m.from + ": " + m.text;
     box.appendChild(d);
   });
+
 }
 
 </script>
