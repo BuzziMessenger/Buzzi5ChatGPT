@@ -1,4 +1,6 @@
 ```js
+// server.js
+
 import express from "express";
 import http from "http";
 import { Server } from "socket.io";
@@ -35,12 +37,6 @@ const Message = mongoose.model("Message", {
 });
 
 /* =========================
-   ONLINE USERS
-========================= */
-
-const onlineUsers = {};
-
-/* =========================
    SOCKET
 ========================= */
 
@@ -64,7 +60,7 @@ io.on("connection", (socket) => {
         username: user,
         password: pass,
         status: "online",
-        avatar: "https://api.dicebear.com/7.x/bottts/svg?seed=chat1"
+        avatar: "https://api.dicebear.com/7.x/bottts/svg?seed=default"
       });
 
     }
@@ -73,9 +69,12 @@ io.on("connection", (socket) => {
       return socket.emit("error_msg", "Onjuiste login");
     }
 
-    socket.username = found.username;
+    if(!found.avatar){
+      found.avatar = "https://api.dicebear.com/7.x/bottts/svg?seed=default";
+      await found.save();
+    }
 
-    onlineUsers[found.username] = socket.id;
+    socket.username = found.username;
 
     socket.join(found.username);
 
@@ -93,7 +92,7 @@ io.on("connection", (socket) => {
   });
 
   /* =========================
-     BERICHTEN
+     MSG
   ========================= */
 
   socket.on("msg", async (m) => {
@@ -174,8 +173,6 @@ io.on("connection", (socket) => {
   socket.on("disconnect", async () => {
 
     if (!socket.username) return;
-
-    delete onlineUsers[socket.username];
 
     await User.updateOne(
       { username: socket.username },

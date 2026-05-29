@@ -5,6 +5,7 @@
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="data:,">
 
 <title>Buzzi Messenger</title>
 
@@ -22,6 +23,46 @@ html, body{
 .dark{
   background:#1e1e1e;
   color:white;
+}
+
+/* SPLASH */
+#splash{
+  position:fixed;
+  inset:0;
+  background:#2b579a;
+  color:white;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  flex-direction:column;
+  z-index:9999;
+}
+
+/* LOGIN */
+#auth{
+  display:none;
+  justify-content:center;
+  align-items:center;
+  height:100dvh;
+}
+
+.card{
+  background:white;
+  padding:20px;
+  border-radius:14px;
+  width:320px;
+  box-shadow:0 0 15px rgba(0,0,0,0.2);
+}
+
+.card input,
+.card select,
+.card button{
+  width:100%;
+  margin-top:10px;
+  padding:12px;
+  border-radius:10px;
+  border:1px solid #ccc;
+  box-sizing:border-box;
 }
 
 /* APP */
@@ -80,12 +121,13 @@ html, body{
   gap:10px;
 }
 
-/* WHATSAPP BUBBLES */
+/* BUBBLES */
 .msg{
   max-width:70%;
   padding:10px;
   border-radius:14px;
   animation:fade .2s ease;
+  word-break:break-word;
 }
 
 .me{
@@ -103,10 +145,12 @@ html, body{
   margin-top:4px;
 }
 
+/* INPUT */
 .input{
   display:flex;
   padding:10px;
   background:white;
+  gap:10px;
 }
 
 .input input{
@@ -121,11 +165,20 @@ html, body{
   position:fixed;
   right:10px;
   top:60px;
-  width:240px;
+  width:260px;
+  max-height:80vh;
+  overflow-y:auto;
   background:white;
-  border-radius:10px;
+  border-radius:14px;
   padding:15px;
   z-index:999;
+  box-shadow:0 0 15px rgba(0,0,0,0.2);
+}
+
+.avatar-grid{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
 }
 
 /* MOBILE */
@@ -149,8 +202,14 @@ html, body{
 }
 
 @keyframes fade{
-  from{opacity:0;transform:translateY(5px)}
-  to{opacity:1;transform:none}
+  from{
+    opacity:0;
+    transform:translateY(5px)
+  }
+  to{
+    opacity:1;
+    transform:none
+  }
 }
 
 </style>
@@ -158,18 +217,37 @@ html, body{
 
 <body>
 
-<div id="auth">
-  <input id="user" placeholder="Gebruiker">
-  <input id="pass" type="password" placeholder="Wachtwoord">
-
-  <select id="mode">
-    <option value="login">Inloggen</option>
-    <option value="register">Registreren</option>
-  </select>
-
-  <button onclick="login()">Start</button>
+<!-- SPLASH -->
+<div id="splash">
+  <h1>Buzzi Messenger</h1>
+  <p>is aan het laden...</p>
 </div>
 
+<!-- LOGIN -->
+<div id="auth">
+
+  <div class="card">
+
+    <h2>Buzzi Messenger</h2>
+
+    <input id="user" placeholder="Gebruikersnaam">
+
+    <input id="pass" type="password" placeholder="Wachtwoord">
+
+    <select id="mode">
+      <option value="login">Inloggen</option>
+      <option value="register">Registreren</option>
+    </select>
+
+    <button onclick="login()">
+      Start
+    </button>
+
+  </div>
+
+</div>
+
+<!-- APP -->
 <div id="app">
 
   <div class="sidebar">
@@ -179,12 +257,16 @@ html, body{
   <div class="chat">
 
     <div class="header">
-      <span id="chatTitle">Buzzi Messenger</span>
+
+      <span id="chatTitle">
+        Buzzi Messenger
+      </span>
 
       <div>
         <button onclick="toggleDark()">🌙</button>
         <button onclick="toggleSettings()">⚙</button>
       </div>
+
     </div>
 
     <div id="typing"></div>
@@ -192,29 +274,112 @@ html, body{
     <div id="messages" class="messages"></div>
 
     <div class="input">
-      <button onclick="toggleEmoji()">😊</button>
+
+      <button onclick="toggleEmoji()">
+        😊
+      </button>
 
       <input id="msg" placeholder="Typ bericht...">
 
-      <button onclick="send()">Versturen</button>
+      <button onclick="send()">
+        Versturen
+      </button>
+
     </div>
 
   </div>
 
 </div>
 
+<!-- SETTINGS -->
 <div id="settings">
+
+  <h3>⚙ Instellingen</h3>
+
+  <hr>
 
   <h4>Status</h4>
 
-  <button onclick="setStatus('online')">🟢 Online</button>
-  <button onclick="setStatus('offline')">🔴 Offline</button>
+  <button onclick="setStatus('online')">
+    🟢 Online
+  </button>
 
-  <h4>Avatar</h4>
+  <button onclick="setStatus('offline')">
+    🔴 Offline
+  </button>
 
-  <img class="avatar" src="https://api.dicebear.com/7.x/bottts/svg?seed=chat1" onclick="pickAvatar(this)">
-  <img class="avatar" src="https://api.dicebear.com/7.x/bottts/svg?seed=chat2" onclick="pickAvatar(this)">
-  <img class="avatar" src="https://api.dicebear.com/7.x/bottts/svg?seed=chat3" onclick="pickAvatar(this)">
+  <button onclick="setStatus('afwezig')">
+    🌙 Afwezig
+  </button>
+
+  <button onclick="setStatus('bezet')">
+    ⛔ Bezet
+  </button>
+
+  <hr>
+
+  <h4>Thema</h4>
+
+  <button onclick="toggleDark()">
+    🌙 Donkere modus
+  </button>
+
+  <button onclick="toggleLight()">
+    ☀ Lichte modus
+  </button>
+
+  <hr>
+
+  <h4>Geluid</h4>
+
+  <label>
+    <input type="checkbox" id="soundToggle" checked>
+    Berichtgeluiden
+  </label>
+
+  <br><br>
+
+  <label>
+    <input type="checkbox" id="vibrateToggle" checked>
+    Trillen op mobiel
+  </label>
+
+  <hr>
+
+  <h4>Meldingen</h4>
+
+  <button onclick="enableNotifications()">
+    🔔 Browser meldingen activeren
+  </button>
+
+  <hr>
+
+  <h4>Profielfoto</h4>
+
+  <div class="avatar-grid">
+
+    <img class="avatar"
+      src="https://api.dicebear.com/7.x/bottts/svg?seed=chat1"
+      onclick="pickAvatar(this)"
+    >
+
+    <img class="avatar"
+      src="https://api.dicebear.com/7.x/bottts/svg?seed=chat2"
+      onclick="pickAvatar(this)"
+    >
+
+    <img class="avatar"
+      src="https://api.dicebear.com/7.x/bottts/svg?seed=chat3"
+      onclick="pickAvatar(this)"
+    >
+
+  </div>
+
+  <hr>
+
+  <button onclick="logout()">
+    🚪 Uitloggen
+  </button>
 
 </div>
 
@@ -228,10 +393,18 @@ let me = null;
 let active = null;
 let chatCache = {};
 
+const splash = document.getElementById("splash");
 const auth = document.getElementById("auth");
 const app = document.getElementById("app");
+
 const usersBox = document.getElementById("users");
 const messages = document.getElementById("messages");
+
+/* SPLASH */
+setTimeout(()=>{
+  splash.style.display="none";
+  auth.style.display="flex";
+},1500);
 
 /* LOGIN */
 function login(){
@@ -244,12 +417,17 @@ function login(){
 
 }
 
+/* LOGIN OK */
 socket.on("login_ok",(u)=>{
 
   me = u.username;
 
   auth.style.display="none";
   app.style.display="flex";
+
+  if (Notification.permission !== "granted") {
+    Notification.requestPermission();
+  }
 
 });
 
@@ -260,17 +438,23 @@ socket.on("users",(users)=>{
 
   users.forEach(u=>{
 
-    if(!u || !u.username) return;
-    if(u.username === me) return;
+    if(!u) return;
+    if(!u.username) return;
+    if(u.username==="undefined") return;
+    if(String(u.username).trim()==="") return;
+    if(u.username===me) return;
 
     const d=document.createElement("div");
+
     d.className="user";
 
     d.innerHTML=`
-      <img class="avatar" src="${u.avatar}">
+      <img class="avatar"
+      src="${u.avatar || 'https://api.dicebear.com/7.x/bottts/svg?seed=default'}">
+
       <div>
         ${u.username}<br>
-        <small>${u.status}</small>
+        <small>${u.status || 'offline'}</small>
       </div>
     `;
 
@@ -286,6 +470,9 @@ socket.on("users",(users)=>{
 function openChat(user){
 
   active=user;
+
+  document.getElementById("chatTitle").innerText =
+    "Chat met " + user;
 
   messages.innerHTML="";
 
@@ -315,6 +502,8 @@ function send(){
 
   if(!active) return;
 
+  if(!msg.value.trim()) return;
+
   socket.emit("msg",{
     from:me,
     to:active,
@@ -335,6 +524,7 @@ function renderMessage(m){
 
   d.innerHTML=`
     ${m.text}
+
     <div class="meta">
       ${new Date(m.time).toLocaleTimeString()}
       ${m.read ? "✓✓" : "✓"}
@@ -347,12 +537,14 @@ function renderMessage(m){
 
 }
 
-/* LIVE MSG */
+/* LIVE MESSAGE */
 socket.on("msg",(m)=>{
 
   const partner=(m.from===me)?m.to:m.from;
 
-  if(!chatCache[partner]) chatCache[partner]=[];
+  if(!chatCache[partner]){
+    chatCache[partner]=[];
+  }
 
   chatCache[partner].push(m);
 
@@ -360,14 +552,19 @@ socket.on("msg",(m)=>{
     renderMessage(m);
   }
 
-  /* GELUID */
-  navigator.vibrate?.(100);
+  if(document.getElementById("vibrateToggle")?.checked){
+    navigator.vibrate?.(100);
+  }
 
-  /* BROWSER MELDING */
   if(Notification.permission==="granted"){
-    new Notification("Nieuw bericht van "+m.from,{
-      body:m.text
-    });
+
+    new Notification(
+      "Nieuw bericht van "+m.from,
+      {
+        body:m.text
+      }
+    );
+
   }
 
 });
@@ -399,7 +596,7 @@ socket.on("typing",(u)=>{
 /* SETTINGS */
 function toggleSettings(){
 
-  settings.style.display=
+  settings.style.display =
     settings.style.display==="block"
     ?"none"
     :"block";
@@ -428,18 +625,43 @@ function pickAvatar(el){
 
 /* DARK MODE */
 function toggleDark(){
-  document.body.classList.toggle("dark");
+
+  document.body.classList.add("dark");
+
+  localStorage.setItem("theme","dark");
+
+}
+
+function toggleLight(){
+
+  document.body.classList.remove("dark");
+
+  localStorage.setItem("theme","light");
+
+}
+
+if(localStorage.getItem("theme")==="dark"){
+  document.body.classList.add("dark");
+}
+
+/* NOTIFICATIONS */
+function enableNotifications(){
+
+  if(Notification.permission!=="granted"){
+    Notification.requestPermission();
+  }
+
+}
+
+/* LOGOUT */
+function logout(){
+  location.reload();
 }
 
 /* EMOJI */
 function toggleEmoji(){
-
   msg.value += "";
-
 }
-
-/* NOTIFICATION */
-Notification.requestPermission();
 
 </script>
 
