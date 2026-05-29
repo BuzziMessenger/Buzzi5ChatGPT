@@ -1,92 +1,63 @@
 import express from "express";
 import http from "http";
 import mongoose from "mongoose";
+import cors from "cors";
 import { Server } from "socket.io";
 
 const app = express();
+app.use(cors());
+
 const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: { origin: "*" }
 });
 
-mongoose.connect("mongodb+srv://Buzzi:BuzziMessenger@buzzimessenger.yoprloo.mongodb.net/buzzi_db");
+// ================= DB =================
+mongoose.connect(process.env.MONGO_URL);
 
+// ================= USERS =================
 const User = mongoose.model("User", {
   username: String,
   password: String,
   avatar: String,
-  status: String,
-  lastSeen: Number
+  status: String
 });
 
-const Message = mongoose.model("Message", {
-  from: String,
-  to: String,
-  text: String,
-  time: Number,
-  read: Boolean
-});
-
+// ================= SOCKET =================
 io.on("connection", (socket) => {
 
-  socket.on("auth", async ({ user, pass, mode }) => {
+  socket.on("auth", async ({ user, pass }) => {
 
     let u = await User.findOne({ username: user });
 
-    if (mode === "register") {
-      if (u) return socket.emit("error_msg", "Bestaat al");
-
+    if (!u) {
       u = await User.create({
         username: user,
         password: pass,
-        avatar: "https://api.dicebear.com/7.x/fun-emoji/svg?seed=" + user,
-        status: "online",
-        lastSeen: Date.now()
+        avatar: "",
+        status: "online"
       });
     }
 
-    if (!u || u.password !== pass)
-      return socket.emit("error_msg", "Fout login");
+    if (u.password !== pass) return;
 
     socket.username = u.username;
     socket.join(u.username);
 
-    await User.updateOne({ username: u.username }, {
-      status: "online",
-      lastSeen: Date.now()
-    });
+    u.status = "online";
+    await u.save();
 
     socket.emit("login_ok", u);
-
     io.emit("users", await User.find());
   });
 
-  socket.on("msg", async (m) => {
-
-    const msg = await Message.create({ ...m, read: false });
-
-    io.to(m.to).emit("msg", msg);
-    io.to(m.from).emit("msg", msg);
+  socket.on("msg", (data) => {
+    io.to(data.to).emit("msg", data);
+    io.to(data.from).emit("msg", data);
   });
 
-  socket.on("history", async ({ a, b }) => {
-
-    const msgs = await Message.find({
-      $or: [
-        { from: a, to: b },
-        { from: b, to: a }
-      ]
-    });
-
-    socket.emit("history", msgs);
-  });
-
-  socket.on("typing", ({ to, from }) => {
-    io.to(to).emit("typing", from);
-  });
-
-  socket.on("buzz", ({ from, to }) => {
+  socket.on("buzz", ({ to, from }) => {
     io.to(to).emit("buzz", from);
   });
 
@@ -94,16 +65,17 @@ io.on("connection", (socket) => {
     io.to(to).emit("wink", emoji);
   });
 
-  socket.on("status_update", async ({ user, status }) => {
-    await User.updateOne({ username: user }, { status });
-    io.emit("users", await User.find());
-  });
+  socket.on("disconnect", async () => {
+    if (!socket.username) return;
 
-  socket.on("avatar_update", async ({ user, avatar }) => {
-    await User.updateOne({ username: user }, { avatar });
+    await User.updateOne(
+      { username: socket.username },
+      { status: "offline" }
+    );
+
     io.emit("users", await User.find());
   });
 
 });
 
-server.listen(10000);
+server.listen(process.env.PORT || 10000);

@@ -1,124 +1,63 @@
-import React, { useEffect, useState } from 'react'
-import socket from './socket'
-import './styles.css'
+const socket = io("https://JOUW-BACKEND.onrender.com");
 
-export default function App() {
+let me;
+let active;
 
-  const [message, setMessage] = useState('')
-  const [messages, setMessages] = useState([])
+socket.emit("auth", {
+  user: prompt("user"),
+  pass: prompt("pass")
+});
 
-  useEffect(() => {
+socket.on("login_ok", u => me = u.username);
 
-    socket.on('connect', () => {
-      console.log('Verbonden met backend 🚀')
-    })
+socket.on("users", users => {
 
-    socket.on('receive_message', (data) => {
-      setMessages((prev) => [...prev, data])
-    })
+  sidebar.innerHTML = "";
 
-    return () => {
-      socket.off('receive_message')
-    }
+  users.forEach(u => {
 
-  }, [])
+    if(u.username === me) return;
 
-  const sendMessage = () => {
+    const d = document.createElement("div");
+    d.className = "user";
+    d.innerText = u.username;
 
-    if (message.trim() === '') return
+    d.onclick = () => openChat(u.username);
 
-    socket.emit('send_message', message)
+    sidebar.appendChild(d);
+  });
 
-    setMessage('')
-  }
+});
 
-  return (
-    <div className="messenger-layout">
+function openChat(u){
+  active = u;
+  messages.innerHTML = "";
+}
 
-      <div className="sidebar">
+function send(){
+  socket.emit("msg", {
+    from: me,
+    to: active,
+    text: msg.value,
+    time: Date.now()
+  });
 
-        <div className="profile-box">
-          <div className="avatar"></div>
+  msg.value = "";
+}
 
-          <h2>Robbin</h2>
+socket.on("msg", m => {
 
-          <p>🟢 Online</p>
-        </div>
+  const d = document.createElement("div");
+  d.className = "msg " + (m.from === me ? "me" : "other");
+  d.innerText = m.text;
 
-        <div className="contact-list">
+  messages.appendChild(d);
+});
 
-          <div className="contact">
-            <div className="status-dot"></div>
-            Dennis
-          </div>
+function buzz(){
+  socket.emit("buzz", { from: me, to: active });
+}
 
-          <div className="contact">
-            <div className="status-dot"></div>
-            Laura
-          </div>
-
-          <div className="contact">
-            <div className="status-dot"></div>
-            Kevin
-          </div>
-
-        </div>
-
-      </div>
-
-      <div className="main-content">
-
-        <div className="topbar">
-
-          <h2>Buzzi Messenger</h2>
-
-          <div className="top-buttons">
-            <button>Video</button>
-            <button>Voice</button>
-            <button onClick={() => alert('BUZZZ 😄')}>
-              Buzz
-            </button>
-          </div>
-
-        </div>
-
-        <div className="chat-window">
-
-          {messages.map((msg, index) => (
-            <div key={index} className="message self">
-              <div className="message-user">
-                Jij
-              </div>
-
-              {msg}
-            </div>
-          ))}
-
-        </div>
-
-        <div className="input-bar">
-
-          <button>😀</button>
-
-          <input
-            placeholder="Typ een bericht..."
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                sendMessage()
-              }
-            }}
-          />
-
-          <button onClick={sendMessage}>
-            Versturen
-          </button>
-
-        </div>
-
-      </div>
-
-    </div>
-  )
+function wink(e){
+  socket.emit("wink", { to: active, emoji:e });
 }

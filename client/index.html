@@ -3,285 +3,33 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <title>Buzzi Messenger</title>
 
+<link rel="stylesheet" href="style.css">
 <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
-
-<style>
-
-body{
-  margin:0;
-  font-family:Segoe UI;
-  height:100vh;
-  overflow:hidden;
-  display:flex;
-}
-
-/* ===== CONTACTS MOBILE STYLE ===== */
-
-#users{
-  width:320px;
-  background:#f3f6ff;
-  overflow-y:auto;
-  border-right:1px solid #ddd;
-}
-
-.user{
-  display:flex;
-  align-items:center;
-  gap:10px;
-  padding:12px;
-  margin:8px;
-  background:white;
-  border-radius:14px;
-  cursor:pointer;
-}
-
-.user:hover{ background:#e7eeff; }
-
-.avatar{
-  width:44px;
-  height:44px;
-  border-radius:50%;
-}
-
-.online-dot{
-  width:10px;
-  height:10px;
-  border-radius:50%;
-  background:green;
-  margin-left:5px;
-}
-
-/* ===== CHAT ===== */
-
-#chat{
-  flex:1;
-  display:flex;
-  flex-direction:column;
-  height:100vh;
-}
-
-#header{
-  background:#2b579a;
-  color:white;
-  padding:12px;
-  display:flex;
-  justify-content:space-between;
-}
-
-#messages{
-  flex:1;
-  overflow-y:auto;
-  padding:10px;
-  display:flex;
-  flex-direction:column;
-  gap:8px;
-}
-
-.msg{
-  max-width:70%;
-  padding:10px;
-  border-radius:15px;
-}
-
-.me{ background:#c9f7c2; align-self:flex-end; }
-.other{ background:white; }
-
-#input{
-  display:flex;
-  gap:10px;
-  padding:10px;
-}
-
-#input input{
-  flex:1;
-  padding:10px;
-}
-
-/* ===== MOBILE ===== */
-
-@media(max-width:768px){
-
-  body{
-    flex-direction:column;
-  }
-
-  #users{
-    width:100%;
-    height:100vh;
-  }
-
-  #chat{
-    display:none;
-    height:100vh;
-  }
-
-  .mobileChatOpen #users{
-    display:none;
-  }
-
-  .mobileChatOpen #chat{
-    display:flex;
-  }
-
-  #back{
-    display:block;
-    cursor:pointer;
-  }
-
-}
-
-#back{
-  display:none;
-  margin-right:10px;
-}
-
-</style>
 </head>
 
 <body>
 
-<!-- CONTACTS -->
-<div id="users"></div>
+<div id="sidebar"></div>
 
-<!-- CHAT -->
 <div id="chat">
-
   <div id="header">
+    <span id="title">Buzzi</span>
     <div>
-      <span id="back">🔙</span>
-      <span id="title">Buzzi Chat</span>
+      <button onclick="buzz()">📳</button>
+      <button onclick="wink('😂')">😂</button>
     </div>
   </div>
 
   <div id="messages"></div>
 
   <div id="input">
-    <input id="msg" placeholder="Typ...">
-    <button onclick="send()">➡</button>
+    <input id="msg">
+    <button onclick="send()">Send</button>
   </div>
-
 </div>
 
-<script>
-
-const socket = io("https://buzzimessenger.onrender.com");
-
-let me;
-let active;
-let cache = {};
-
-/* ===== LOGIN SIMPEL ===== */
-
-let username = prompt("username");
-let password = prompt("password");
-
-socket.emit("auth", {
-  user: username,
-  pass: password,
-  mode: "login"
-});
-
-socket.on("login_ok", u => {
-  me = u.username;
-});
-
-/* ===== USERS ===== */
-
-socket.on("users", users => {
-
-  usersBox.innerHTML = "";
-
-  users.forEach(u => {
-
-    if(u.username === me) return;
-
-    const d = document.createElement("div");
-    d.className = "user";
-
-    d.innerHTML = `
-      <img class="avatar" src="${u.avatar}">
-      <div>
-        ${u.username}
-        ${u.status === "online" ? '<span class="online-dot"></span>' : ''}
-        <br><small>${u.status}</small>
-      </div>
-    `;
-
-    d.onclick = () => openChat(u.username);
-
-    users.appendChild(d);
-  });
-
-});
-
-/* ===== OPEN CHAT (MOBILE FIX) ===== */
-
-function openChat(user){
-
-  active = user;
-
-  document.body.classList.add("mobileChatOpen");
-
-  title.innerText = "Chat met " + user;
-
-  messages.innerHTML = "";
-
-  socket.emit("history", { a: me, b: user });
-}
-
-/* ===== BACK BUTTON ===== */
-
-back.onclick = () => {
-  document.body.classList.remove("mobileChatOpen");
-};
-
-/* ===== HISTORY ===== */
-
-socket.on("history", msgs => {
-
-  msgs.forEach(render);
-});
-
-/* ===== SEND ===== */
-
-function send(){
-
-  if(!active) return;
-
-  socket.emit("msg", {
-    from: me,
-    to: active,
-    text: msg.value,
-    time: Date.now()
-  });
-
-  msg.value = "";
-}
-
-/* ===== RENDER ===== */
-
-function render(m){
-
-  const d = document.createElement("div");
-  d.className = "msg " + (m.from === me ? "me" : "other");
-  d.innerText = m.text;
-
-  messages.appendChild(d);
-  messages.scrollTop = messages.scrollHeight;
-}
-
-/* ===== LIVE MSG ===== */
-
-socket.on("msg", m => {
-
-  render(m);
-
-});
-
-</script>
-
+<script src="app.js"></script>
 </body>
 </html>
