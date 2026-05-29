@@ -1,13 +1,12 @@
-```js
-// ================================
-// server.js
-// Buzzi Messenger Stable Base v1
-// ================================
+```js id="serverjs-v2"
+// ========================================
+// Buzzi Messenger Rebuild v2 - server.js
+// ========================================
 
 import express from "express";
 import http from "http";
-import { Server } from "socket.io";
 import mongoose from "mongoose";
+import { Server } from "socket.io";
 
 const app = express();
 const server = http.createServer(app);
@@ -18,9 +17,9 @@ const io = new Server(server, {
   }
 });
 
-/* ================================
-   MONGODB
-================================ */
+// ===============================
+// MONGODB
+// ===============================
 
 mongoose.connect(
   "mongodb+srv://Buzzi:BuzziMessenger@buzzimessenger.yoprloo.mongodb.net/buzzi_db?retryWrites=true&w=majority"
@@ -28,15 +27,16 @@ mongoose.connect(
 
 console.log("MongoDB verbonden");
 
-/* ================================
-   MODELS
-================================ */
+// ===============================
+// MODELS
+// ===============================
 
 const User = mongoose.model("User", {
   username: String,
   password: String,
+  avatar: String,
   status: String,
-  avatar: String
+  lastSeen: Number
 });
 
 const Message = mongoose.model("Message", {
@@ -47,15 +47,15 @@ const Message = mongoose.model("Message", {
   read: Boolean
 });
 
-/* ================================
-   SOCKET.IO
-================================ */
+// ===============================
+// SOCKET
+// ===============================
 
 io.on("connection", (socket) => {
 
-  console.log("Nieuwe gebruiker verbonden");
+  console.log("Nieuwe verbinding");
 
-  /* LOGIN / REGISTER */
+  // LOGIN / REGISTER
   socket.on("auth", async ({ user, pass, mode }) => {
 
     if (!user || !pass) {
@@ -69,7 +69,7 @@ io.on("connection", (socket) => {
       username: user
     });
 
-    /* REGISTER */
+    // REGISTER
     if (mode === "register") {
 
       if (found) {
@@ -82,14 +82,15 @@ io.on("connection", (socket) => {
       found = await User.create({
         username: user,
         password: pass,
-        status: "online",
         avatar:
-          "https://api.dicebear.com/7.x/bottts/svg?seed=default"
+          "https://api.dicebear.com/7.x/fun-emoji/svg?seed=default",
+        status: "online",
+        lastSeen: Date.now()
       });
 
     }
 
-    /* LOGIN */
+    // LOGIN
     if (
       !found ||
       found.password !== pass
@@ -100,23 +101,16 @@ io.on("connection", (socket) => {
       );
     }
 
-    /* AVATAR FIX */
-    if (!found.avatar) {
-
-      found.avatar =
-        "https://api.dicebear.com/7.x/bottts/svg?seed=default";
-
-      await found.save();
-
-    }
-
     socket.username = found.username;
 
     socket.join(found.username);
 
     await User.updateOne(
       { username: found.username },
-      { status: "online" }
+      {
+        status: "online",
+        lastSeen: Date.now()
+      }
     );
 
     socket.emit("login_ok", found);
@@ -127,7 +121,7 @@ io.on("connection", (socket) => {
 
   });
 
-  /* BERICHT */
+  // MESSAGE
   socket.on("msg", async (m) => {
 
     const msg = await Message.create({
@@ -140,7 +134,7 @@ io.on("connection", (socket) => {
 
   });
 
-  /* GESCHIEDENIS */
+  // HISTORY
   socket.on("history", async ({ a, b }) => {
 
     const msgs = await Message.find({
@@ -154,14 +148,14 @@ io.on("connection", (socket) => {
 
   });
 
-  /* TYPING */
+  // TYPING
   socket.on("typing", ({ to, from }) => {
 
     io.to(to).emit("typing", from);
 
   });
 
-  /* STATUS */
+  // STATUS
   socket.on(
     "status_update",
     async ({ user, status }) => {
@@ -178,7 +172,7 @@ io.on("connection", (socket) => {
     }
   );
 
-  /* AVATAR */
+  // AVATAR
   socket.on(
     "avatar_update",
     async ({ user, avatar }) => {
@@ -195,14 +189,17 @@ io.on("connection", (socket) => {
     }
   );
 
-  /* DISCONNECT */
+  // DISCONNECT
   socket.on("disconnect", async () => {
 
     if (!socket.username) return;
 
     await User.updateOne(
       { username: socket.username },
-      { status: "offline" }
+      {
+        status: "offline",
+        lastSeen: Date.now()
+      }
     );
 
     const users = await User.find();
@@ -213,9 +210,9 @@ io.on("connection", (socket) => {
 
 });
 
-/* ================================
-   USERS SYNC
-================================ */
+// ===============================
+// USERS SYNC
+// ===============================
 
 setInterval(async () => {
 
@@ -225,14 +222,14 @@ setInterval(async () => {
 
 }, 5000);
 
-/* ================================
-   START SERVER
-================================ */
+// ===============================
+// START SERVER
+// ===============================
 
 server.listen(10000, () => {
 
   console.log(
-    "Buzzi Messenger server draait op poort 10000"
+    "Buzzi Messenger Rebuild v2 draait"
   );
 
 });

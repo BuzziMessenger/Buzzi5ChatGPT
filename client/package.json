@@ -1,9 +1,8 @@
 {
   "name": "buzzi-client",
   "version": "1.0.0",
-  "private": true,
   "scripts": {
-    "build": "echo no build",
-    "start": "npx serve ."
+    "start": "react-scripts start",
+    "build": "react-scripts build"
   }
 }

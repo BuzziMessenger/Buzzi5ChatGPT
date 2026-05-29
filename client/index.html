@@ -1,4 +1,4 @@
-```html
+```html id="indexhtml-v2"
 <!DOCTYPE html>
 <html lang="nl">
 
@@ -6,8 +6,10 @@
 
 <meta charset="UTF-8">
 
-<meta name="viewport"
-content="width=device-width, initial-scale=1.0">
+<meta
+name="viewport"
+content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+>
 
 <link rel="icon" href="data:,">
 
@@ -15,9 +17,9 @@ content="width=device-width, initial-scale=1.0">
 
 <style>
 
-/* ================================
+/* ====================================
    BASIS
-================================ */
+==================================== */
 
 html,
 body{
@@ -25,7 +27,9 @@ body{
   margin:0;
   padding:0;
 
+  width:100%;
   height:100%;
+
   overflow:hidden;
 
   font-family:Segoe UI;
@@ -34,16 +38,18 @@ body{
 
 }
 
-.dark{
-
-  background:#1e1e1e;
-  color:white;
-
+*{
+  box-sizing:border-box;
 }
 
-/* ================================
+.dark{
+  background:#1e1e1e;
+  color:white;
+}
+
+/* ====================================
    SPLASH
-================================ */
+==================================== */
 
 #splash{
 
@@ -63,9 +69,9 @@ body{
 
 }
 
-/* ================================
+/* ====================================
    LOGIN
-================================ */
+==================================== */
 
 #auth{
 
@@ -80,15 +86,15 @@ body{
 
 .card{
 
-  width:320px;
+  width:340px;
 
   background:white;
 
-  padding:20px;
+  border-radius:18px;
 
-  border-radius:16px;
+  padding:22px;
 
-  box-shadow:0 0 20px rgba(0,0,0,0.2);
+  box-shadow:0 0 25px rgba(0,0,0,0.2);
 
 }
 
@@ -98,45 +104,48 @@ body{
 
   width:100%;
 
-  padding:12px;
+  padding:14px;
 
   margin-top:10px;
 
-  border-radius:10px;
+  border-radius:12px;
 
   border:1px solid #ccc;
 
-  box-sizing:border-box;
+  font-size:15px;
 
 }
 
-/* ================================
+/* ====================================
    APP
-================================ */
+==================================== */
 
 #app{
 
   display:none;
 
+  width:100%;
   height:100dvh;
 
-  display:flex;
+  overflow:hidden;
 
 }
 
-/* ================================
-   CONTACTEN
-================================ */
+/* ====================================
+   SIDEBAR
+==================================== */
 
 .sidebar{
 
-  width:260px;
+  width:290px;
 
   background:#f5f7ff;
 
+  border-right:1px solid #ddd;
+
   overflow-y:auto;
 
-  border-right:1px solid #ddd;
+  height:100dvh;
 
 }
 
@@ -144,37 +153,57 @@ body{
 
   display:flex;
   align-items:center;
-  gap:10px;
+  gap:12px;
 
-  padding:10px;
-  margin:5px;
+  padding:12px;
+
+  margin:8px;
 
   background:white;
 
-  border-radius:10px;
+  border-radius:14px;
 
   cursor:pointer;
+
+  transition:.2s;
 
 }
 
 .user:hover{
-
   background:#e7eeff;
-
 }
 
 .avatar{
 
-  width:42px;
-  height:42px;
+  width:46px;
+  height:46px;
 
   border-radius:50%;
 
 }
 
-/* ================================
+/* ====================================
+   ONLINE DOT
+==================================== */
+
+.online-dot{
+
+  width:10px;
+  height:10px;
+
+  border-radius:50%;
+
+  background:#35d04d;
+
+  display:inline-block;
+
+  margin-left:6px;
+
+}
+
+/* ====================================
    CHAT
-================================ */
+==================================== */
 
 .chat{
 
@@ -185,6 +214,8 @@ body{
 
   min-height:0;
 
+  height:100dvh;
+
 }
 
 .header{
@@ -193,7 +224,7 @@ body{
 
   color:white;
 
-  padding:12px;
+  padding:14px;
 
   display:flex;
   justify-content:space-between;
@@ -201,13 +232,17 @@ body{
 
 }
 
+/* ====================================
+   MESSAGES
+==================================== */
+
 .messages{
 
   flex:1;
 
   overflow-y:auto;
 
-  padding:10px;
+  padding:14px;
 
   display:flex;
   flex-direction:column;
@@ -216,21 +251,21 @@ body{
 
 }
 
-/* ================================
+/* ====================================
    BUBBLES
-================================ */
+==================================== */
 
 .msg{
 
-  max-width:70%;
+  max-width:75%;
 
-  padding:10px;
+  padding:12px;
 
-  border-radius:14px;
-
-  word-break:break-word;
+  border-radius:18px;
 
   animation:fade .2s ease;
+
+  word-break:break-word;
 
 }
 
@@ -250,17 +285,17 @@ body{
 
 .meta{
 
-  margin-top:4px;
+  margin-top:5px;
 
   font-size:11px;
 
-  opacity:0.7;
+  opacity:.7;
 
 }
 
-/* ================================
+/* ====================================
    INPUT
-================================ */
+==================================== */
 
 .input{
 
@@ -278,15 +313,19 @@ body{
 
   flex:1;
 
-  padding:12px;
+  padding:14px;
+
+  border-radius:14px;
+
+  border:1px solid #ccc;
 
   font-size:16px;
 
 }
 
-/* ================================
+/* ====================================
    SETTINGS
-================================ */
+==================================== */
 
 #settings{
 
@@ -297,7 +336,7 @@ body{
   right:10px;
   top:60px;
 
-  width:260px;
+  width:280px;
 
   max-height:80vh;
 
@@ -305,13 +344,13 @@ body{
 
   background:white;
 
-  border-radius:14px;
+  border-radius:16px;
 
-  padding:15px;
+  padding:16px;
 
   z-index:999;
 
-  box-shadow:0 0 15px rgba(0,0,0,0.2);
+  box-shadow:0 0 20px rgba(0,0,0,0.25);
 
 }
 
@@ -323,9 +362,47 @@ body{
 
 }
 
-/* ================================
+/* ====================================
+   EMOJI PICKER
+==================================== */
+
+#emojiPicker{
+
+  display:none;
+
+  position:absolute;
+
+  bottom:80px;
+
+  left:10px;
+
+  background:white;
+
+  border-radius:14px;
+
+  padding:10px;
+
+  width:250px;
+
+  box-shadow:0 0 15px rgba(0,0,0,0.2);
+
+}
+
+.emoji{
+
+  font-size:24px;
+
+  cursor:pointer;
+
+  padding:5px;
+
+  display:inline-block;
+
+}
+
+/* ====================================
    MOBILE
-================================ */
+==================================== */
 
 @media(max-width:768px){
 
@@ -339,42 +416,44 @@ body{
 
     width:100%;
 
-    height:180px;
+    height:220px;
 
     overflow-y:auto;
 
-    overflow-x:hidden;
+    border-right:none;
 
-    display:block;
+    border-bottom:1px solid #ddd;
 
   }
 
-  .user{
+  .chat{
 
-    min-width:auto;
+    height:calc(100dvh - 220px);
+
+  }
+
+  .msg{
+
+    max-width:88%;
 
   }
 
 }
 
-/* ================================
+/* ====================================
    ANIMATIE
-================================ */
+==================================== */
 
 @keyframes fade{
 
   from{
-
     opacity:0;
-    transform:translateY(5px);
-
+    transform:translateY(6px);
   }
 
   to{
-
     opacity:1;
     transform:none;
-
   }
 
 }
@@ -437,7 +516,10 @@ body{
 
 <!-- APP -->
 
-<div id="app">
+<div
+id="app"
+style="display:flex"
+>
 
   <!-- CONTACTEN -->
 
@@ -471,16 +553,29 @@ body{
 
     </div>
 
-    <div id="typing"></div>
+    <div
+      id="typing"
+      style="
+      padding-left:10px;
+      font-size:12px;
+      opacity:.7;
+      "
+    ></div>
 
     <div
       id="messages"
       class="messages"
     ></div>
 
+    <!-- EMOJI PICKER -->
+
+    <div id="emojiPicker"></div>
+
+    <!-- INPUT -->
+
     <div class="input">
 
-      <button onclick="toggleEmoji()">
+      <button onclick="toggleEmojiPicker()">
         😊
       </button>
 
@@ -521,10 +616,6 @@ body{
     🌙 Afwezig
   </button>
 
-  <button onclick="setStatus('bezet')">
-    ⛔ Bezet
-  </button>
-
   <hr>
 
   <h4>Thema</h4>
@@ -542,30 +633,30 @@ body{
   <h4>Meldingen</h4>
 
   <button onclick="enableNotifications()">
-    🔔 Meldingen activeren
+    🔔 Meldingen aanzetten
   </button>
 
   <hr>
 
-  <h4>Profielfoto</h4>
+  <h4>Avatar kiezen</h4>
 
   <div class="avatar-grid">
 
     <img
       class="avatar"
-      src="https://api.dicebear.com/7.x/bottts/svg?seed=chat1"
+      src="https://api.dicebear.com/7.x/fun-emoji/svg?seed=1"
       onclick="pickAvatar(this)"
     >
 
     <img
       class="avatar"
-      src="https://api.dicebear.com/7.x/bottts/svg?seed=chat2"
+      src="https://api.dicebear.com/7.x/fun-emoji/svg?seed=2"
       onclick="pickAvatar(this)"
     >
 
     <img
       class="avatar"
-      src="https://api.dicebear.com/7.x/bottts/svg?seed=chat3"
+      src="https://api.dicebear.com/7.x/fun-emoji/svg?seed=3"
       onclick="pickAvatar(this)"
     >
 
@@ -583,25 +674,25 @@ body{
 
 <script>
 
-/* ================================
-   SOCKET
-================================ */
+// ====================================
+// SOCKET
+// ====================================
 
 const socket =
   io("https://buzzimessenger.onrender.com");
 
-/* ================================
-   STATE
-================================ */
+// ====================================
+// STATE
+// ====================================
 
 let me = null;
 let active = null;
 
 let chatCache = {};
 
-/* ================================
-   ELEMENTEN
-================================ */
+// ====================================
+// ELEMENTEN
+// ====================================
 
 const splash =
   document.getElementById("splash");
@@ -618,9 +709,9 @@ const usersBox =
 const messages =
   document.getElementById("messages");
 
-/* ================================
-   SPLASH
-================================ */
+// ====================================
+// SPLASH
+// ====================================
 
 setTimeout(()=>{
 
@@ -630,9 +721,9 @@ setTimeout(()=>{
 
 },1500);
 
-/* ================================
-   LOGIN
-================================ */
+// ====================================
+// LOGIN
+// ====================================
 
 function login(){
 
@@ -668,9 +759,9 @@ socket.on("login_ok",(u)=>{
 
 });
 
-/* ================================
-   USERS
-================================ */
+// ====================================
+// USERS
+// ====================================
 
 socket.on("users",(users)=>{
 
@@ -690,16 +781,23 @@ socket.on("users",(users)=>{
     d.innerHTML=`
 
       <img
-        class="avatar"
-        src="${u.avatar || 'https://api.dicebear.com/7.x/bottts/svg?seed=default'}"
-      >
+      class="avatar"
+      src="${u.avatar}">
 
       <div>
 
-        ${u.username}<br>
+        ${u.username}
+
+        ${
+          u.status==="online"
+          ?'<span class="online-dot"></span>'
+          :''
+        }
+
+        <br>
 
         <small>
-          ${u.status || 'offline'}
+          ${u.status}
         </small>
 
       </div>
@@ -718,9 +816,9 @@ socket.on("users",(users)=>{
 
 });
 
-/* ================================
-   CHAT OPENEN
-================================ */
+// ====================================
+// OPEN CHAT
+// ====================================
 
 function openChat(user){
 
@@ -748,9 +846,9 @@ function openChat(user){
 
 }
 
-/* ================================
-   HISTORY
-================================ */
+// ====================================
+// HISTORY
+// ====================================
 
 socket.on("history",(msgs)=>{
 
@@ -764,9 +862,9 @@ socket.on("history",(msgs)=>{
 
 });
 
-/* ================================
-   VERSTUREN
-================================ */
+// ====================================
+// SEND
+// ====================================
 
 function send(){
 
@@ -787,17 +885,17 @@ function send(){
 
 }
 
-/* ================================
-   BERICHT TONEN
-================================ */
+// ====================================
+// RENDER MESSAGE
+// ====================================
 
 function renderMessage(m){
 
   const d=document.createElement("div");
 
-  d.className =
+  d.className=
     "msg " +
-    (m.from===me ? "me" : "other");
+    (m.from===me?"me":"other");
 
   d.innerHTML=`
 
@@ -822,9 +920,9 @@ function renderMessage(m){
 
 }
 
-/* ================================
-   LIVE MSG
-================================ */
+// ====================================
+// LIVE MESSAGE
+// ====================================
 
 socket.on("msg",(m)=>{
 
@@ -865,9 +963,9 @@ socket.on("msg",(m)=>{
 
 });
 
-/* ================================
-   TYPING
-================================ */
+// ====================================
+// TYPING
+// ====================================
 
 msg.addEventListener("input",()=>{
 
@@ -897,9 +995,9 @@ socket.on("typing",(u)=>{
 
 });
 
-/* ================================
-   SETTINGS
-================================ */
+// ====================================
+// SETTINGS
+// ====================================
 
 function toggleSettings(){
 
@@ -910,7 +1008,9 @@ function toggleSettings(){
 
 }
 
-/* SETTINGS SLUITEN */
+// ====================================
+// SETTINGS CLOSE
+// ====================================
 
 document.addEventListener(
   "click",
@@ -929,9 +1029,9 @@ document.addEventListener(
   }
 );
 
-/* ================================
-   STATUS
-================================ */
+// ====================================
+// STATUS
+// ====================================
 
 function setStatus(s){
 
@@ -944,9 +1044,9 @@ function setStatus(s){
 
 }
 
-/* ================================
-   AVATAR
-================================ */
+// ====================================
+// AVATAR
+// ====================================
 
 function pickAvatar(el){
 
@@ -959,9 +1059,9 @@ function pickAvatar(el){
 
 }
 
-/* ================================
-   DARK MODE
-================================ */
+// ====================================
+// DARK MODE
+// ====================================
 
 function toggleDark(){
 
@@ -994,9 +1094,9 @@ if(
 
 }
 
-/* ================================
-   NOTIFICATIES
-================================ */
+// ====================================
+// NOTIFICATIONS
+// ====================================
 
 function enableNotifications(){
 
@@ -1011,9 +1111,9 @@ function enableNotifications(){
 
 }
 
-/* ================================
-   LOGOUT
-================================ */
+// ====================================
+// LOGOUT
+// ====================================
 
 function logout(){
 
@@ -1021,35 +1121,51 @@ function logout(){
 
 }
 
-/* ================================
-   EMOJI
-================================ */
+// ====================================
+// EMOJI PICKER
+// ====================================
 
-function toggleEmoji(){
+const emojiList = [
 
-  const emojis = [
+  "😀","😁","😂","🤣","😊",
+  "😍","😎","🔥","👍","❤️",
+  "🎉","😜","🤩","🥳","😅",
+  "😇","💪","👏","💯","🚀"
 
-    "😊",
-    "😂",
-    "😍",
-    "😎",
-    "🔥",
-    "👍",
-    "❤️",
-    "🎉"
+];
 
-  ];
+const emojiPicker =
+  document.getElementById(
+    "emojiPicker"
+  );
 
-  const random =
-    emojis[
-      Math.floor(
-        Math.random()*emojis.length
-      )
-    ];
+emojiList.forEach(e=>{
 
-  msg.value += random;
+  const span =
+    document.createElement("span");
 
-  msg.focus();
+  span.className="emoji";
+
+  span.innerText=e;
+
+  span.onclick=()=>{
+
+    msg.value += e;
+
+    msg.focus();
+
+  };
+
+  emojiPicker.appendChild(span);
+
+});
+
+function toggleEmojiPicker(){
+
+  emojiPicker.style.display =
+    emojiPicker.style.display==="block"
+    ?"none"
+    :"block";
 
 }
 
