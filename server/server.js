@@ -2,15 +2,14 @@ import express from "express";
 import http from "http";
 import mongoose from "mongoose";
 import cors from "cors";
-import { Server } from "socket.io";
 
-const app = express();
 app.use(cors());
 
-const server = http.createServer(app);
-
 const io = new Server(server, {
-  cors: { origin: "*" }
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"]
+  }
 });
 
 // ================= DB =================
