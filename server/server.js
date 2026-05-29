@@ -119,7 +119,14 @@ io.on("connection", (socket) => {
       { name: socket.name },
       { status: "offline" }
     );
-
+const io = new Server(server, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"],
+    credentials: true
+  },
+  transports: ["websocket", "polling"]
+});
     const users = await User.find({});
     io.emit("users", users);
   });
