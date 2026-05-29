@@ -22,7 +22,8 @@ const Message = mongoose.model("Message", {
   from: String,
   to: String,
   text: String,
-  time: Number
+  time: Number,
+  reaction: { type: String, default: "" }
 });
 
 io.on("connection", (socket) => {
@@ -35,7 +36,7 @@ io.on("connection", (socket) => {
       const exists = await User.findOne({ username: user });
       if (exists) return socket.emit("login_error");
 
-      await User.create({ username: user, password: pass, status: "online" });
+      await User.create({ username: user, password: pass });
     }
 
     const found = await User.findOne({ username: user, password: pass });
@@ -52,10 +53,10 @@ io.on("connection", (socket) => {
   });
 
   socket.on("chat_message", async (data) => {
-    await Message.create(data);
+    const msg = await Message.create(data);
 
-    io.to(data.to).emit("chat_message", data);
-    io.to(data.from).emit("chat_message", data);
+    io.to(data.to).emit("chat_message", msg);
+    io.to(data.from).emit("chat_message", msg);
   });
 
   socket.on("get_history", async ({ userA, userB }) => {
@@ -68,6 +69,15 @@ io.on("connection", (socket) => {
     });
 
     socket.emit("history", msgs);
+  });
+
+  socket.on("add_reaction", async ({ id, reaction }) => {
+    await Message.updateOne({ _id: id }, { reaction });
+
+    const msg = await Message.findById(id);
+
+    io.to(msg.to).emit("reaction_update", msg);
+    io.to(msg.from).emit("reaction_update", msg);
   });
 
   socket.on("set_status", async ({ user, status }) => {
@@ -93,4 +103,4 @@ io.on("connection", (socket) => {
 
 });
 
-server.listen(10000, () => console.log("BUZZI FINAL POLISH RUNNING"));
+server.listen(10000, () => console.log("BUZZI CLEAN FINAL RUNNING"));

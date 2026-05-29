@@ -5,9 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Buzzi Messenger</title>
 
-<link rel="manifest" href="/manifest.json">
-<meta name="theme-color" content="#2b579a">
-
 <style>
 
 body{margin:0;font-family:Segoe UI;background:#d7e7ff;height:100vh;overflow:hidden}
@@ -17,30 +14,33 @@ body{margin:0;font-family:Segoe UI;background:#d7e7ff;height:100vh;overflow:hidd
   position:fixed;inset:0;
   background:#2b579a;
   display:flex;
+  flex-direction:column;
   justify-content:center;
   align-items:center;
   color:white;
-  flex-direction:column;
-  z-index:999;
 }
 
 /* AUTH */
 #auth{
   position:fixed;inset:0;
   background:#1f3f73;
-  display:none;
+  display:flex;
   justify-content:center;
   align-items:center;
-  z-index:998;
 }
 
-.card{background:white;padding:20px;border-radius:12px;width:320px}
+.card{
+  background:white;
+  padding:20px;
+  border-radius:12px;
+  width:320px;
+}
 
 /* APP */
 .app{display:none;height:100vh;display:flex}
 
-/* SIDEBAR */
 .sidebar{width:250px;background:#f5f8ff;border-right:1px solid #ccc}
+
 .header{background:#2b579a;color:white;padding:10px}
 
 .user{
@@ -61,23 +61,29 @@ body{margin:0;font-family:Segoe UI;background:#d7e7ff;height:100vh;overflow:hidd
 /* CHAT */
 .chat{flex:1;display:flex;flex-direction:column}
 
-.box{flex:1;overflow:auto;padding:10px;display:flex;flex-direction:column;gap:6px}
+.box{flex:1;overflow:auto;padding:15px;display:flex;flex-direction:column;gap:10px}
 
 .msg{
   padding:10px;
-  border-radius:10px;
-  max-width:70%;
+  border-radius:18px;
+  max-width:65%;
+  animation:pop .15s ease;
+}
+
+@keyframes pop{
+  from{transform:scale(.8);opacity:0}
+  to{transform:scale(1);opacity:1}
 }
 
 .me{background:#cfe6ff;align-self:flex-end}
-.other{background:white}
+.other{background:white;align-self:flex-start}
 
 /* INPUT */
 .input{
   display:flex;
   padding:10px;
   background:white;
-  position:relative;
+  gap:8px;
 }
 
 .input input{
@@ -86,33 +92,17 @@ body{margin:0;font-family:Segoe UI;background:#d7e7ff;height:100vh;overflow:hidd
   border-radius:20px;
 }
 
-.input button{
-  width:110px;
-  margin-left:10px;
-}
-
-/* EMOJI */
-#emojiBox{
-  position:absolute;
-  bottom:60px;
-  left:10px;
-  background:white;
-  padding:10px;
-  border-radius:10px;
-  display:none;
-  box-shadow:0 2px 10px rgba(0,0,0,0.2);
-}
-
-/* SETTINGS */
-#settingsPanel{
-  position:fixed;
-  top:50px;
-  right:10px;
-  background:white;
-  padding:10px;
-  border-radius:10px;
-  display:none;
-  z-index:999;
+/* AVATAR */
+.avatar{
+  width:28px;
+  height:28px;
+  border-radius:50%;
+  background:#2b579a;
+  color:white;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  margin-right:8px;
 }
 
 </style>
@@ -123,7 +113,7 @@ body{margin:0;font-family:Segoe UI;background:#d7e7ff;height:100vh;overflow:hidd
 <!-- SPLASH -->
 <div id="splash">
   <h1>💬 Buzzi Messenger</h1>
-  <p>Loading...</p>
+  <p>Buzzi Messenger is aan het laden...</p>
 </div>
 
 <!-- AUTH -->
@@ -131,39 +121,17 @@ body{margin:0;font-family:Segoe UI;background:#d7e7ff;height:100vh;overflow:hidd
   <div class="card">
     <h3>Login / Register</h3>
 
-    <input id="user" placeholder="username">
-    <input id="pass" type="password" placeholder="password">
+    <input id="user" placeholder="Gebruikersnaam">
+    <input id="pass" type="password" placeholder="Wachtwoord">
 
     <select id="mode">
       <option value="login">Login</option>
-      <option value="register">Register</option>
+      <option value="register">Registreren</option>
     </select>
 
-    <button onclick="auth()">Versturen</button>
+    <button onclick="auth()">Inloggen</button>
   </div>
 </div>
-
-<!-- SETTINGS -->
-<div id="settingsPanel">
-
-  <h4>Avatar</h4>
-  <div>
-    <span onclick="setAvatar('🙂')">🙂</span>
-    <span onclick="setAvatar('😎')">😎</span>
-    <span onclick="setAvatar('🔥')">🔥</span>
-    <span onclick="setAvatar('💬')">💬</span>
-  </div>
-
-  <h4>Status</h4>
-  <select onchange="setStatus(this.value)">
-    <option value="online">Online</option>
-    <option value="away">Away</option>
-    <option value="offline">Offline</option>
-  </select>
-
-</div>
-
-<button onclick="toggleSettings()" style="position:fixed;top:10px;right:10px;z-index:1000">⚙</button>
 
 <!-- APP -->
 <div class="app" id="app">
@@ -175,21 +143,13 @@ body{margin:0;font-family:Segoe UI;background:#d7e7ff;height:100vh;overflow:hidd
 
   <div class="chat">
 
-    <div class="header" id="chatTitle">Selecteer chat</div>
+    <div class="header" id="chatTitle">Chat</div>
 
     <div class="box" id="box"></div>
 
     <div class="input">
-
-      <button onclick="toggleEmoji()">😊</button>
-
-      <div id="emojiBox">
-        😄 😂 ❤️ 👍 🔥 😎 🎉 💬 😢 😡
-      </div>
-
-      <input id="msg" placeholder="Typ bericht..." oninput="typing()">
+      <input id="msg" placeholder="Typ bericht...">
       <button onclick="send()">Versturen</button>
-
     </div>
 
   </div>
@@ -204,9 +164,8 @@ const socket = io("https://buzzimessenger.onrender.com");
 
 let me=null;
 let active=null;
-let typingTimeout;
 
-/* SPLASH */
+/* SPLASH FIX */
 setTimeout(()=>{
   splash.style.display="none";
   auth.style.display="flex";
@@ -232,25 +191,18 @@ socket.on("users",users=>{
   usersBox.innerHTML="";
 
   users.forEach(u=>{
-
     if(!u?.username || u.username===me) return;
 
-    const saved = localStorage.getItem("avatar_"+u.username);
-
-    const avatar = saved
-      ? `<div style="width:28px;height:28px;border-radius:50%;background:#2b579a;color:white;display:flex;align-items:center;justify-content:center">${saved}</div>`
-      : `<div style="width:28px;height:28px;border-radius:50%;background:#2b579a;color:white;display:flex;align-items:center;justify-content:center">${u.username[0]}</div>`;
+    const d=document.createElement("div");
+    d.className="user";
 
     const color =
       u.status==="online"?"green":
       u.status==="away"?"orange":"gray";
 
-    const d=document.createElement("div");
-    d.className="user";
-
     d.innerHTML=`
-      ${avatar}
-      <span style="margin-left:8px">${u.username}</span>
+      <div class="avatar">${u.username[0]}</div>
+      <span>${u.username}</span>
       <div class="dot" style="background:${color}"></div>
     `;
 
@@ -264,11 +216,11 @@ socket.on("users",users=>{
   });
 });
 
-/* CHAT */
+/* CHAT SOUND */
+const sound = new Audio("https://actions.google.com/sounds/v1/notifications/notification_2.ogg");
+
 socket.on("chat_message",(m)=>{
-  if(Notification.permission==="granted"){
-    new Notification("Buzzi",{body:m.text});
-  }
+  sound.play();
 
   if(active){
     socket.emit("get_history",{userA:me,userB:active});
@@ -290,49 +242,20 @@ function send(){
   msg.value="";
 }
 
-/* TYPING */
-function typing(){
-  socket.emit("typing",{from:me,to:active});
-  clearTimeout(typingTimeout);
-  typingTimeout=setTimeout(()=>{
-    socket.emit("stop_typing",{from:me,to:active});
-  },600);
-}
-
 /* RENDER */
 function render(msgs){
   box.innerHTML="";
+
   msgs.forEach(m=>{
     const d=document.createElement("div");
     d.className="msg "+(m.from===me?"me":"other");
-    d.innerText=m.text;
+    d.innerHTML=m.text;
+
     box.appendChild(d);
   });
-}
 
-/* SETTINGS */
-function toggleSettings(){
-  settingsPanel.style.display =
-    settingsPanel.style.display==="block"?"none":"block";
+  box.scrollTop=box.scrollHeight;
 }
-
-function setAvatar(icon){
-  localStorage.setItem("avatar_"+me, icon);
-}
-
-function setStatus(status){
-  socket.emit("set_status",{user:me,status});
-}
-
-/* EMOJI */
-function toggleEmoji(){
-  const b=document.getElementById("emojiBox");
-  b.style.display=b.style.display==="block"?"none":"block";
-}
-
-document.getElementById("emojiBox").onclick=(e)=>{
-  if(e.target.innerText) msg.value+=e.target.innerText;
-};
 
 </script>
 
