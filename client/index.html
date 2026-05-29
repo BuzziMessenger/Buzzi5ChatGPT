@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Buzzi Final Messenger</title>
+<title>Buzzi Messenger FINAL</title>
 
 <style>
 
@@ -13,7 +13,7 @@ body{
   margin:0;
   font-family:Segoe UI;
   height:100vh;
-  background:linear-gradient(135deg,#d7e7ff,#bcd6ff);
+  background:#d7e7ff;
   overflow:hidden;
 }
 
@@ -44,8 +44,7 @@ body{
 /* SIDEBAR */
 .sidebar{
   width:260px;
-  background:rgba(255,255,255,0.75);
-  backdrop-filter:blur(10px);
+  background:#f5f8ff;
   border-right:1px solid #cdd8ea;
 }
 
@@ -53,36 +52,16 @@ body{
   background:#2b579a;
   color:white;
   padding:10px;
-  font-weight:bold;
 }
 
 .user{
   padding:10px;
   margin:6px;
   background:white;
-  border-radius:10px;
   display:flex;
   justify-content:space-between;
   cursor:pointer;
-  align-items:center;
-}
-
-.avatar{
-  width:28px;
-  height:28px;
-  border-radius:50%;
-  background:#2b579a;
-  color:white;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-size:12px;
-  margin-right:8px;
-}
-
-.left{
-  display:flex;
-  align-items:center;
+  border-radius:10px;
 }
 
 .dot{
@@ -107,7 +86,6 @@ body{
   padding:10px;
 }
 
-/* BOX */
 .box{
   flex:1;
   overflow-y:auto;
@@ -115,15 +93,13 @@ body{
   display:flex;
   flex-direction:column;
   gap:6px;
-  background:#eaf2ff;
 }
 
 .msg{
   max-width:70%;
   padding:10px;
-  border-radius:12px;
   background:white;
-  word-break:break-word;
+  border-radius:12px;
 }
 
 .me{
@@ -131,19 +107,11 @@ body{
   background:#cfe6ff;
 }
 
-.seen{
-  font-size:10px;
-  color:gray;
-  text-align:right;
-  margin-top:4px;
-}
-
 /* INPUT */
 .input-bar{
   display:flex;
   padding:10px;
   background:white;
-  border-top:1px solid #cdd8ea;
 }
 
 .input-bar input{
@@ -155,7 +123,6 @@ body{
 .input-bar button{
   width:90px;
   margin-left:10px;
-  border-radius:20px;
 }
 
 /* typing */
@@ -166,13 +133,6 @@ body{
   height:16px;
 }
 
-/* MOBILE */
-@media(max-width:768px){
-  .sidebar{width:90px;}
-  .user span{display:none;}
-  .msg{max-width:85%;}
-}
-
 </style>
 </head>
 
@@ -181,10 +141,18 @@ body{
 <!-- AUTH -->
 <div id="auth">
   <div class="card">
-    <h3>Login</h3>
-    <input id="user" placeholder="Username">
-    <input id="pass" type="password" placeholder="Password">
-    <button onclick="auth()">Login</button>
+    <h3>Login / Register</h3>
+
+    <input id="user" placeholder="username">
+    <input id="pass" type="password" placeholder="password">
+
+    <select id="mode">
+      <option value="login">Login</option>
+      <option value="register">Register</option>
+    </select>
+
+    <button onclick="auth()">Start</button>
+
   </div>
 </div>
 
@@ -225,10 +193,11 @@ let typingTimeout;
 
 /* AUTH */
 function auth(){
+
   socket.emit("register",{
     user:user.value,
     pass:pass.value,
-    mode:"login"
+    mode:mode.value
   });
 }
 
@@ -251,22 +220,16 @@ socket.on("users",users=>{
     const d=document.createElement("div");
     d.className="user";
 
-    const initials=u.username.charAt(0).toUpperCase();
-
     d.innerHTML=`
-      <div class="left">
-        <div class="avatar">${initials}</div>
-        <span>${u.username}</span>
-      </div>
+      <span>${u.username}</span>
       <div class="dot ${u.status==="online"?"online":""}"></div>
     `;
 
     d.onclick=()=>{
       active=u.username;
+      socket.emit("message_seen",{from:me,to:active});
       socket.emit("get_history",{userA:me,userB:active});
       chatTitle.innerText="Chat met "+active;
-
-      socket.emit("message_seen",{from:me,to:active});
     };
 
     usersBox.appendChild(d);
@@ -274,15 +237,14 @@ socket.on("users",users=>{
 
 });
 
-/* HISTORY */
-socket.on("history",render);
-
-/* CHAT UPDATE */
+/* CHAT */
 socket.on("chat_message",()=>{
   if(active){
     socket.emit("get_history",{userA:me,userB:active});
   }
 });
+
+socket.on("history",render);
 
 /* SEND */
 function send(){
@@ -337,7 +299,7 @@ function render(msgs){
 
     d.innerHTML=`
       <div>${m.text}</div>
-      <div class="seen">${time}</div>
+      <div style="font-size:10px;color:gray;text-align:right">${time}</div>
     `;
 
     box.appendChild(d);
