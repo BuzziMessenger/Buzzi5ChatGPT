@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Buzzi Messenger FINAL</title>
+<title>Buzzi Messenger Snapshot</title>
 
 <style>
 
@@ -54,6 +54,7 @@ body{
   padding:10px;
 }
 
+/* USER */
 .user{
   padding:10px;
   margin:6px;
@@ -63,15 +64,6 @@ body{
   cursor:pointer;
   border-radius:10px;
 }
-
-.dot{
-  width:9px;
-  height:9px;
-  border-radius:50%;
-  background:gray;
-}
-
-.online{background:limegreen;}
 
 /* CHAT */
 .chat{
@@ -98,8 +90,9 @@ body{
 .msg{
   max-width:70%;
   padding:10px;
-  background:white;
   border-radius:12px;
+  background:white;
+  word-break:break-word;
 }
 
 .me{
@@ -141,6 +134,7 @@ body{
 <!-- AUTH -->
 <div id="auth">
   <div class="card">
+
     <h3>Login / Register</h3>
 
     <input id="user" placeholder="username">
@@ -160,7 +154,7 @@ body{
 <div class="app" id="app">
 
   <div class="sidebar">
-    <div class="header">Contacten</div>
+    <div class="header">Contacten 😄</div>
     <div id="users"></div>
   </div>
 
@@ -174,7 +168,7 @@ body{
 
     <div class="input-bar">
       <input id="msg" oninput="typing()">
-      <button onclick="send()">Send</button>
+      <button onclick="send()">Send 🚀</button>
     </div>
 
   </div>
@@ -191,9 +185,20 @@ let me=null;
 let active=null;
 let typingTimeout;
 
+/* SAFE DOM */
+const authEl=document.getElementById("auth");
+const appEl=document.getElementById("app");
+const usersBox=document.getElementById("users");
+const box=document.getElementById("box");
+const msg=document.getElementById("msg");
+const typingEl=document.getElementById("typing");
+const chatTitle=document.getElementById("chatTitle");
+const user=document.getElementById("user");
+const pass=document.getElementById("pass");
+const mode=document.getElementById("mode");
+
 /* AUTH */
 function auth(){
-
   socket.emit("register",{
     user:user.value,
     pass:pass.value,
@@ -204,8 +209,8 @@ function auth(){
 /* LOGIN */
 socket.on("login_success",(u)=>{
   me=u.username;
-  auth.style.display="none";
-  app.style.display="flex";
+  authEl.style.display="none";
+  appEl.style.display="flex";
 });
 
 /* USERS */
@@ -220,14 +225,10 @@ socket.on("users",users=>{
     const d=document.createElement("div");
     d.className="user";
 
-    d.innerHTML=`
-      <span>${u.username}</span>
-      <div class="dot ${u.status==="online"?"online":""}"></div>
-    `;
+    d.innerHTML=`💬 ${u.username}`;
 
     d.onclick=()=>{
       active=u.username;
-      socket.emit("message_seen",{from:me,to:active});
       socket.emit("get_history",{userA:me,userB:active});
       chatTitle.innerText="Chat met "+active;
     };
@@ -277,11 +278,11 @@ function typing(){
 
 socket.on("typing",d=>{
   if(d.from===active){
-    typing.innerText=active+" is aan het typen...";
+    typingEl.innerText=active+" is aan het typen... ✍️";
   }
 });
 
-socket.on("stop_typing",()=>typing.innerText="");
+socket.on("stop_typing",()=>typingEl.innerText="");
 
 /* RENDER */
 function render(msgs){
@@ -290,17 +291,10 @@ function render(msgs){
 
   msgs.forEach(m=>{
 
-    const time=m.time
-      ? new Date(m.time).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})
-      : "";
-
     const d=document.createElement("div");
     d.className="msg "+(m.from===me?"me":"");
 
-    d.innerHTML=`
-      <div>${m.text}</div>
-      <div style="font-size:10px;color:gray;text-align:right">${time}</div>
-    `;
+    d.innerText=`${m.text} 😄`;
 
     box.appendChild(d);
   });
