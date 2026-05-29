@@ -1,8 +1,3 @@
-```js id="serverjs-v2"
-// ========================================
-// Buzzi Messenger Rebuild v2 - server.js
-// ========================================
-
 import express from "express";
 import http from "http";
 import mongoose from "mongoose";
@@ -12,24 +7,10 @@ const app = express();
 const server = http.createServer(app);
 
 const io = new Server(server, {
-  cors: {
-    origin: "*"
-  }
+  cors: { origin: "*" }
 });
 
-// ===============================
-// MONGODB
-// ===============================
-
-mongoose.connect(
-  "mongodb+srv://Buzzi:BuzziMessenger@buzzimessenger.yoprloo.mongodb.net/buzzi_db?retryWrites=true&w=majority"
-);
-
-console.log("MongoDB verbonden");
-
-// ===============================
-// MODELS
-// ===============================
+mongoose.connect("mongodb+srv://Buzzi:BuzziMessenger@buzzimessenger.yoprloo.mongodb.net/buzzi_db");
 
 const User = mongoose.model("User", {
   username: String,
@@ -47,94 +28,48 @@ const Message = mongoose.model("Message", {
   read: Boolean
 });
 
-// ===============================
-// SOCKET
-// ===============================
-
 io.on("connection", (socket) => {
 
-  console.log("Nieuwe verbinding");
-
-  // LOGIN / REGISTER
   socket.on("auth", async ({ user, pass, mode }) => {
 
-    if (!user || !pass) {
-      return socket.emit(
-        "error_msg",
-        "Vul alle velden in"
-      );
-    }
+    let u = await User.findOne({ username: user });
 
-    let found = await User.findOne({
-      username: user
-    });
-
-    // REGISTER
     if (mode === "register") {
+      if (u) return socket.emit("error_msg", "Bestaat al");
 
-      if (found) {
-        return socket.emit(
-          "error_msg",
-          "Gebruiker bestaat al"
-        );
-      }
-
-      found = await User.create({
+      u = await User.create({
         username: user,
         password: pass,
-        avatar:
-          "https://api.dicebear.com/7.x/fun-emoji/svg?seed=default",
+        avatar: "https://api.dicebear.com/7.x/fun-emoji/svg?seed=" + user,
         status: "online",
         lastSeen: Date.now()
       });
-
     }
 
-    // LOGIN
-    if (
-      !found ||
-      found.password !== pass
-    ) {
-      return socket.emit(
-        "error_msg",
-        "Onjuiste login"
-      );
-    }
+    if (!u || u.password !== pass)
+      return socket.emit("error_msg", "Fout login");
 
-    socket.username = found.username;
+    socket.username = u.username;
+    socket.join(u.username);
 
-    socket.join(found.username);
+    await User.updateOne({ username: u.username }, {
+      status: "online",
+      lastSeen: Date.now()
+    });
 
-    await User.updateOne(
-      { username: found.username },
-      {
-        status: "online",
-        lastSeen: Date.now()
-      }
-    );
+    socket.emit("login_ok", u);
 
-    socket.emit("login_ok", found);
-
-    const users = await User.find();
-
-    io.emit("users", users);
-
+    io.emit("users", await User.find());
   });
 
-  // MESSAGE
   socket.on("msg", async (m) => {
 
-    const msg = await Message.create({
-      ...m,
-      read: false
-    });
+    const msg = await Message.create({ ...m, read: false });
 
     io.to(m.to).emit("msg", msg);
     io.to(m.from).emit("msg", msg);
-
   });
 
-  // HISTORY
   socket.on("history", async ({ a, b }) => {
 
     const msgs = await Message.find({
@@ -145,92 +80,30 @@ io.on("connection", (socket) => {
     });
 
     socket.emit("history", msgs);
-
   });
 
-  // TYPING
   socket.on("typing", ({ to, from }) => {
-
     io.to(to).emit("typing", from);
-
   });
 
-  // STATUS
-  socket.on(
-    "status_update",
-    async ({ user, status }) => {
+  socket.on("buzz", ({ from, to }) => {
+    io.to(to).emit("buzz", from);
+  });
 
-      await User.updateOne(
-        { username: user },
-        { status }
-      );
+  socket.on("wink", ({ to, emoji }) => {
+    io.to(to).emit("wink", emoji);
+  });
 
-      const users = await User.find();
+  socket.on("status_update", async ({ user, status }) => {
+    await User.updateOne({ username: user }, { status });
+    io.emit("users", await User.find());
+  });
 
-      io.emit("users", users);
-
-    }
-  );
-
-  // AVATAR
-  socket.on(
-    "avatar_update",
-    async ({ user, avatar }) => {
-
-      await User.updateOne(
-        { username: user },
-        { avatar }
-      );
-
-      const users = await User.find();
-
-      io.emit("users", users);
-
-    }
-  );
-
-  // DISCONNECT
-  socket.on("disconnect", async () => {
-
-    if (!socket.username) return;
-
-    await User.updateOne(
-      { username: socket.username },
-      {
-        status: "offline",
-        lastSeen: Date.now()
-      }
-    );
-
-    const users = await User.find();
-
-    io.emit("users", users);
-
+  socket.on("avatar_update", async ({ user, avatar }) => {
+    await User.updateOne({ username: user }, { avatar });
+    io.emit("users", await User.find());
   });
 
 });
 
-// ===============================
-// USERS SYNC
-// ===============================
-
-setInterval(async () => {
-
-  const users = await User.find();
-
-  io.emit("users", users);
-
-}, 5000);
-
-// ===============================
-// START SERVER
-// ===============================
-
-server.listen(10000, () => {
-
-  console.log(
-    "Buzzi Messenger Rebuild v2 draait"
-  );
-
-});
-```
+server.listen(10000);

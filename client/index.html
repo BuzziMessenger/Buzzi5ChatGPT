@@ -1,461 +1,141 @@
-```html id="indexhtml-v2"
 <!DOCTYPE html>
 <html lang="nl">
-
 <head>
-
 <meta charset="UTF-8">
-
-<meta
-name="viewport"
-content="width=device-width, initial-scale=1.0, viewport-fit=cover"
->
-
-<link rel="icon" href="data:,">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <title>Buzzi Messenger</title>
 
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+
 <style>
 
-/* ====================================
-   BASIS
-==================================== */
-
-html,
 body{
-
   margin:0;
-  padding:0;
-
-  width:100%;
-  height:100%;
-
-  overflow:hidden;
-
   font-family:Segoe UI;
-
-  background:#dfe9f7;
-
-}
-
-*{
-  box-sizing:border-box;
-}
-
-.dark{
-  background:#1e1e1e;
-  color:white;
-}
-
-/* ====================================
-   SPLASH
-==================================== */
-
-#splash{
-
-  position:fixed;
-  inset:0;
-
-  background:#2b579a;
-
-  color:white;
-
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  flex-direction:column;
-
-  z-index:9999;
-
-}
-
-/* ====================================
-   LOGIN
-==================================== */
-
-#auth{
-
-  display:none;
-
-  justify-content:center;
-  align-items:center;
-
-  height:100dvh;
-
-}
-
-.card{
-
-  width:340px;
-
-  background:white;
-
-  border-radius:18px;
-
-  padding:22px;
-
-  box-shadow:0 0 25px rgba(0,0,0,0.2);
-
-}
-
-.card input,
-.card select,
-.card button{
-
-  width:100%;
-
-  padding:14px;
-
-  margin-top:10px;
-
-  border-radius:12px;
-
-  border:1px solid #ccc;
-
-  font-size:15px;
-
-}
-
-/* ====================================
-   APP
-==================================== */
-
-#app{
-
-  display:none;
-
-  width:100%;
-  height:100dvh;
-
+  height:100vh;
   overflow:hidden;
-
+  display:flex;
 }
 
-/* ====================================
-   SIDEBAR
-==================================== */
+/* ===== CONTACTS MOBILE STYLE ===== */
 
-.sidebar{
-
-  width:290px;
-
-  background:#f5f7ff;
-
-  border-right:1px solid #ddd;
-
+#users{
+  width:320px;
+  background:#f3f6ff;
   overflow-y:auto;
-
-  height:100dvh;
-
+  border-right:1px solid #ddd;
 }
 
 .user{
-
   display:flex;
   align-items:center;
-  gap:12px;
-
+  gap:10px;
   padding:12px;
-
   margin:8px;
-
   background:white;
-
   border-radius:14px;
-
   cursor:pointer;
-
-  transition:.2s;
-
 }
 
-.user:hover{
-  background:#e7eeff;
-}
+.user:hover{ background:#e7eeff; }
 
 .avatar{
-
-  width:46px;
-  height:46px;
-
+  width:44px;
+  height:44px;
   border-radius:50%;
-
 }
-
-/* ====================================
-   ONLINE DOT
-==================================== */
 
 .online-dot{
-
   width:10px;
   height:10px;
-
   border-radius:50%;
-
-  background:#35d04d;
-
-  display:inline-block;
-
-  margin-left:6px;
-
+  background:green;
+  margin-left:5px;
 }
 
-/* ====================================
-   CHAT
-==================================== */
+/* ===== CHAT ===== */
 
-.chat{
-
+#chat{
   flex:1;
-
   display:flex;
   flex-direction:column;
-
-  min-height:0;
-
-  height:100dvh;
-
+  height:100vh;
 }
 
-.header{
-
+#header{
   background:#2b579a;
-
   color:white;
-
-  padding:14px;
-
+  padding:12px;
   display:flex;
   justify-content:space-between;
-  align-items:center;
-
 }
 
-/* ====================================
-   MESSAGES
-==================================== */
-
-.messages{
-
+#messages{
   flex:1;
-
   overflow-y:auto;
-
-  padding:14px;
-
+  padding:10px;
   display:flex;
   flex-direction:column;
-
-  gap:10px;
-
+  gap:8px;
 }
-
-/* ====================================
-   BUBBLES
-==================================== */
 
 .msg{
-
-  max-width:75%;
-
-  padding:12px;
-
-  border-radius:18px;
-
-  animation:fade .2s ease;
-
-  word-break:break-word;
-
-}
-
-.me{
-
-  align-self:flex-end;
-
-  background:#c9f7c2;
-
-}
-
-.other{
-
-  background:white;
-
-}
-
-.meta{
-
-  margin-top:5px;
-
-  font-size:11px;
-
-  opacity:.7;
-
-}
-
-/* ====================================
-   INPUT
-==================================== */
-
-.input{
-
-  display:flex;
-
-  gap:10px;
-
+  max-width:70%;
   padding:10px;
-
-  background:white;
-
+  border-radius:15px;
 }
 
-.input input{
+.me{ background:#c9f7c2; align-self:flex-end; }
+.other{ background:white; }
 
+#input{
+  display:flex;
+  gap:10px;
+  padding:10px;
+}
+
+#input input{
   flex:1;
-
-  padding:14px;
-
-  border-radius:14px;
-
-  border:1px solid #ccc;
-
-  font-size:16px;
-
-}
-
-/* ====================================
-   SETTINGS
-==================================== */
-
-#settings{
-
-  display:none;
-
-  position:fixed;
-
-  right:10px;
-  top:60px;
-
-  width:280px;
-
-  max-height:80vh;
-
-  overflow-y:auto;
-
-  background:white;
-
-  border-radius:16px;
-
-  padding:16px;
-
-  z-index:999;
-
-  box-shadow:0 0 20px rgba(0,0,0,0.25);
-
-}
-
-.avatar-grid{
-
-  display:flex;
-  flex-wrap:wrap;
-  gap:10px;
-
-}
-
-/* ====================================
-   EMOJI PICKER
-==================================== */
-
-#emojiPicker{
-
-  display:none;
-
-  position:absolute;
-
-  bottom:80px;
-
-  left:10px;
-
-  background:white;
-
-  border-radius:14px;
-
   padding:10px;
-
-  width:250px;
-
-  box-shadow:0 0 15px rgba(0,0,0,0.2);
-
 }
 
-.emoji{
-
-  font-size:24px;
-
-  cursor:pointer;
-
-  padding:5px;
-
-  display:inline-block;
-
-}
-
-/* ====================================
-   MOBILE
-==================================== */
+/* ===== MOBILE ===== */
 
 @media(max-width:768px){
 
-  #app{
-
+  body{
     flex-direction:column;
-
   }
 
-  .sidebar{
-
+  #users{
     width:100%;
-
-    height:220px;
-
-    overflow-y:auto;
-
-    border-right:none;
-
-    border-bottom:1px solid #ddd;
-
+    height:100vh;
   }
 
-  .chat{
-
-    height:calc(100dvh - 220px);
-
+  #chat{
+    display:none;
+    height:100vh;
   }
 
-  .msg{
+  .mobileChatOpen #users{
+    display:none;
+  }
 
-    max-width:88%;
+  .mobileChatOpen #chat{
+    display:flex;
+  }
 
+  #back{
+    display:block;
+    cursor:pointer;
   }
 
 }
 
-/* ====================================
-   ANIMATIE
-==================================== */
-
-@keyframes fade{
-
-  from{
-    opacity:0;
-    transform:translateY(6px);
-  }
-
-  to{
-    opacity:1;
-    transform:none;
-  }
-
+#back{
+  display:none;
+  margin-right:10px;
 }
 
 </style>
@@ -463,714 +143,145 @@ body{
 
 <body>
 
-<!-- SPLASH -->
+<!-- CONTACTS -->
+<div id="users"></div>
 
-<div id="splash">
+<!-- CHAT -->
+<div id="chat">
 
-  <h1>Buzzi Messenger</h1>
-
-  <p>Buzzi Messenger is aan het laden...</p>
-
-</div>
-
-<!-- LOGIN -->
-
-<div id="auth">
-
-  <div class="card">
-
-    <h2>Buzzi Messenger</h2>
-
-    <input
-      id="user"
-      placeholder="Gebruikersnaam"
-    >
-
-    <input
-      id="pass"
-      type="password"
-      placeholder="Wachtwoord"
-    >
-
-    <select id="mode">
-
-      <option value="login">
-        Inloggen
-      </option>
-
-      <option value="register">
-        Registreren
-      </option>
-
-    </select>
-
-    <button onclick="login()">
-      Start
-    </button>
-
-    <div id="error"></div>
-
-  </div>
-
-</div>
-
-<!-- APP -->
-
-<div
-id="app"
-style="display:flex"
->
-
-  <!-- CONTACTEN -->
-
-  <div class="sidebar">
-
-    <div id="users"></div>
-
-  </div>
-
-  <!-- CHAT -->
-
-  <div class="chat">
-
-    <div class="header">
-
-      <span id="chatTitle">
-        Buzzi Messenger
-      </span>
-
-      <div>
-
-        <button onclick="toggleDark()">
-          🌙
-        </button>
-
-        <button onclick="toggleSettings()">
-          ⚙
-        </button>
-
-      </div>
-
+  <div id="header">
+    <div>
+      <span id="back">🔙</span>
+      <span id="title">Buzzi Chat</span>
     </div>
+  </div>
 
-    <div
-      id="typing"
-      style="
-      padding-left:10px;
-      font-size:12px;
-      opacity:.7;
-      "
-    ></div>
+  <div id="messages"></div>
 
-    <div
-      id="messages"
-      class="messages"
-    ></div>
-
-    <!-- EMOJI PICKER -->
-
-    <div id="emojiPicker"></div>
-
-    <!-- INPUT -->
-
-    <div class="input">
-
-      <button onclick="toggleEmojiPicker()">
-        😊
-      </button>
-
-      <input
-        id="msg"
-        placeholder="Typ bericht..."
-      >
-
-      <button onclick="send()">
-        Versturen
-      </button>
-
-    </div>
-
+  <div id="input">
+    <input id="msg" placeholder="Typ...">
+    <button onclick="send()">➡</button>
   </div>
 
 </div>
-
-<!-- SETTINGS -->
-
-<div id="settings">
-
-  <h3>⚙ Instellingen</h3>
-
-  <hr>
-
-  <h4>Status</h4>
-
-  <button onclick="setStatus('online')">
-    🟢 Online
-  </button>
-
-  <button onclick="setStatus('offline')">
-    🔴 Offline
-  </button>
-
-  <button onclick="setStatus('afwezig')">
-    🌙 Afwezig
-  </button>
-
-  <hr>
-
-  <h4>Thema</h4>
-
-  <button onclick="toggleDark()">
-    🌙 Donkere modus
-  </button>
-
-  <button onclick="toggleLight()">
-    ☀ Lichte modus
-  </button>
-
-  <hr>
-
-  <h4>Meldingen</h4>
-
-  <button onclick="enableNotifications()">
-    🔔 Meldingen aanzetten
-  </button>
-
-  <hr>
-
-  <h4>Avatar kiezen</h4>
-
-  <div class="avatar-grid">
-
-    <img
-      class="avatar"
-      src="https://api.dicebear.com/7.x/fun-emoji/svg?seed=1"
-      onclick="pickAvatar(this)"
-    >
-
-    <img
-      class="avatar"
-      src="https://api.dicebear.com/7.x/fun-emoji/svg?seed=2"
-      onclick="pickAvatar(this)"
-    >
-
-    <img
-      class="avatar"
-      src="https://api.dicebear.com/7.x/fun-emoji/svg?seed=3"
-      onclick="pickAvatar(this)"
-    >
-
-  </div>
-
-  <hr>
-
-  <button onclick="logout()">
-    🚪 Uitloggen
-  </button>
-
-</div>
-
-<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 
 <script>
 
-// ====================================
-// SOCKET
-// ====================================
+const socket = io("https://buzzimessenger.onrender.com");
 
-const socket =
-  io("https://buzzimessenger.onrender.com");
+let me;
+let active;
+let cache = {};
 
-// ====================================
-// STATE
-// ====================================
+/* ===== LOGIN SIMPEL ===== */
 
-let me = null;
-let active = null;
+let username = prompt("username");
+let password = prompt("password");
 
-let chatCache = {};
-
-// ====================================
-// ELEMENTEN
-// ====================================
-
-const splash =
-  document.getElementById("splash");
-
-const auth =
-  document.getElementById("auth");
-
-const app =
-  document.getElementById("app");
-
-const usersBox =
-  document.getElementById("users");
-
-const messages =
-  document.getElementById("messages");
-
-// ====================================
-// SPLASH
-// ====================================
-
-setTimeout(()=>{
-
-  splash.style.display="none";
-
-  auth.style.display="flex";
-
-},1500);
-
-// ====================================
-// LOGIN
-// ====================================
-
-function login(){
-
-  socket.emit("auth",{
-
-    user:user.value,
-    pass:pass.value,
-    mode:mode.value
-
-  });
-
-}
-
-socket.on("error_msg",(m)=>{
-
-  error.innerText=m;
-
+socket.emit("auth", {
+  user: username,
+  pass: password,
+  mode: "login"
 });
 
-socket.on("login_ok",(u)=>{
-
+socket.on("login_ok", u => {
   me = u.username;
-
-  auth.style.display="none";
-
-  app.style.display="flex";
-
-  if(Notification.permission!=="granted"){
-
-    Notification.requestPermission();
-
-  }
-
 });
 
-// ====================================
-// USERS
-// ====================================
+/* ===== USERS ===== */
 
-socket.on("users",(users)=>{
+socket.on("users", users => {
 
-  usersBox.innerHTML="";
+  usersBox.innerHTML = "";
 
-  users.forEach(u=>{
+  users.forEach(u => {
 
-    if(!u) return;
-    if(!u.username) return;
+    if(u.username === me) return;
 
-    if(u.username===me) return;
+    const d = document.createElement("div");
+    d.className = "user";
 
-    const d=document.createElement("div");
-
-    d.className="user";
-
-    d.innerHTML=`
-
-      <img
-      class="avatar"
-      src="${u.avatar}">
-
+    d.innerHTML = `
+      <img class="avatar" src="${u.avatar}">
       <div>
-
         ${u.username}
-
-        ${
-          u.status==="online"
-          ?'<span class="online-dot"></span>'
-          :''
-        }
-
-        <br>
-
-        <small>
-          ${u.status}
-        </small>
-
+        ${u.status === "online" ? '<span class="online-dot"></span>' : ''}
+        <br><small>${u.status}</small>
       </div>
-
     `;
 
-    d.onclick=()=>{
+    d.onclick = () => openChat(u.username);
 
-      openChat(u.username);
-
-    };
-
-    usersBox.appendChild(d);
-
+    users.appendChild(d);
   });
 
 });
 
-// ====================================
-// OPEN CHAT
-// ====================================
+/* ===== OPEN CHAT (MOBILE FIX) ===== */
 
 function openChat(user){
 
-  active=user;
+  active = user;
 
-  chatTitle.innerText =
-    "Chat met " + user;
+  document.body.classList.add("mobileChatOpen");
 
-  messages.innerHTML="";
+  title.innerText = "Chat met " + user;
 
-  if(chatCache[user]){
+  messages.innerHTML = "";
 
-    chatCache[user].forEach(
-      renderMessage
-    );
-
-  }
-
-  socket.emit("history",{
-
-    a:me,
-    b:user
-
-  });
-
+  socket.emit("history", { a: me, b: user });
 }
 
-// ====================================
-// HISTORY
-// ====================================
+/* ===== BACK BUTTON ===== */
 
-socket.on("history",(msgs)=>{
+back.onclick = () => {
+  document.body.classList.remove("mobileChatOpen");
+};
 
-  if(!active) return;
+/* ===== HISTORY ===== */
 
-  chatCache[active]=msgs;
+socket.on("history", msgs => {
 
-  messages.innerHTML="";
-
-  msgs.forEach(renderMessage);
-
+  msgs.forEach(render);
 });
 
-// ====================================
-// SEND
-// ====================================
+/* ===== SEND ===== */
 
 function send(){
 
   if(!active) return;
 
-  if(!msg.value.trim()) return;
-
-  socket.emit("msg",{
-
-    from:me,
-    to:active,
-    text:msg.value,
-    time:Date.now()
-
+  socket.emit("msg", {
+    from: me,
+    to: active,
+    text: msg.value,
+    time: Date.now()
   });
 
-  msg.value="";
-
+  msg.value = "";
 }
 
-// ====================================
-// RENDER MESSAGE
-// ====================================
+/* ===== RENDER ===== */
 
-function renderMessage(m){
+function render(m){
 
-  const d=document.createElement("div");
-
-  d.className=
-    "msg " +
-    (m.from===me?"me":"other");
-
-  d.innerHTML=`
-
-    ${m.text}
-
-    <div class="meta">
-
-      ${new Date(
-        m.time
-      ).toLocaleTimeString()}
-
-      ${m.read ? "✓✓" : "✓"}
-
-    </div>
-
-  `;
+  const d = document.createElement("div");
+  d.className = "msg " + (m.from === me ? "me" : "other");
+  d.innerText = m.text;
 
   messages.appendChild(d);
-
-  messages.scrollTop =
-    messages.scrollHeight;
-
+  messages.scrollTop = messages.scrollHeight;
 }
 
-// ====================================
-// LIVE MESSAGE
-// ====================================
+/* ===== LIVE MSG ===== */
 
-socket.on("msg",(m)=>{
+socket.on("msg", m => {
 
-  const partner =
-    (m.from===me)
-    ?m.to
-    :m.from;
-
-  if(!chatCache[partner]){
-
-    chatCache[partner]=[];
-
-  }
-
-  chatCache[partner].push(m);
-
-  if(partner===active){
-
-    renderMessage(m);
-
-  }
-
-  navigator.vibrate?.(100);
-
-  if(Notification.permission==="granted"){
-
-    new Notification(
-
-      "Nieuw bericht van "+m.from,
-
-      {
-        body:m.text
-      }
-
-    );
-
-  }
+  render(m);
 
 });
-
-// ====================================
-// TYPING
-// ====================================
-
-msg.addEventListener("input",()=>{
-
-  if(!active) return;
-
-  socket.emit("typing",{
-
-    to:active,
-    from:me
-
-  });
-
-});
-
-socket.on("typing",(u)=>{
-
-  typing.innerText =
-    u + " typt...";
-
-  clearTimeout(window.typingTimeout);
-
-  window.typingTimeout=setTimeout(()=>{
-
-    typing.innerText="";
-
-  },1000);
-
-});
-
-// ====================================
-// SETTINGS
-// ====================================
-
-function toggleSettings(){
-
-  settings.style.display =
-    settings.style.display==="block"
-    ?"none"
-    :"block";
-
-}
-
-// ====================================
-// SETTINGS CLOSE
-// ====================================
-
-document.addEventListener(
-  "click",
-  (e)=>{
-
-    if(
-      settings.style.display==="block" &&
-      !settings.contains(e.target) &&
-      e.target.innerText!=="⚙"
-    ){
-
-      settings.style.display="none";
-
-    }
-
-  }
-);
-
-// ====================================
-// STATUS
-// ====================================
-
-function setStatus(s){
-
-  socket.emit("status_update",{
-
-    user:me,
-    status:s
-
-  });
-
-}
-
-// ====================================
-// AVATAR
-// ====================================
-
-function pickAvatar(el){
-
-  socket.emit("avatar_update",{
-
-    user:me,
-    avatar:el.src
-
-  });
-
-}
-
-// ====================================
-// DARK MODE
-// ====================================
-
-function toggleDark(){
-
-  document.body.classList.add("dark");
-
-  localStorage.setItem(
-    "theme",
-    "dark"
-  );
-
-}
-
-function toggleLight(){
-
-  document.body.classList.remove("dark");
-
-  localStorage.setItem(
-    "theme",
-    "light"
-  );
-
-}
-
-if(
-  localStorage.getItem("theme")
-  ==="dark"
-){
-
-  document.body.classList.add("dark");
-
-}
-
-// ====================================
-// NOTIFICATIONS
-// ====================================
-
-function enableNotifications(){
-
-  if(
-    Notification.permission
-    !=="granted"
-  ){
-
-    Notification.requestPermission();
-
-  }
-
-}
-
-// ====================================
-// LOGOUT
-// ====================================
-
-function logout(){
-
-  location.reload();
-
-}
-
-// ====================================
-// EMOJI PICKER
-// ====================================
-
-const emojiList = [
-
-  "😀","😁","😂","🤣","😊",
-  "😍","😎","🔥","👍","❤️",
-  "🎉","😜","🤩","🥳","😅",
-  "😇","💪","👏","💯","🚀"
-
-];
-
-const emojiPicker =
-  document.getElementById(
-    "emojiPicker"
-  );
-
-emojiList.forEach(e=>{
-
-  const span =
-    document.createElement("span");
-
-  span.className="emoji";
-
-  span.innerText=e;
-
-  span.onclick=()=>{
-
-    msg.value += e;
-
-    msg.focus();
-
-  };
-
-  emojiPicker.appendChild(span);
-
-});
-
-function toggleEmojiPicker(){
-
-  emojiPicker.style.display =
-    emojiPicker.style.display==="block"
-    ?"none"
-    :"block";
-
-}
 
 </script>
 
 </body>
 </html>
-```
