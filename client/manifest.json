@@ -1,0 +1,8 @@
+{
+  "name": "Buzzi Messenger",
+  "short_name": "Buzzi",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#2b579a",
+  "theme_color": "#2b579a"
+}

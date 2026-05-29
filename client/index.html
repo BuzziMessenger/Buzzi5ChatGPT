@@ -3,127 +3,63 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Buzzi Messenger Snapshot</title>
+<title>Buzzi Messenger</title>
+
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#2b579a">
 
 <style>
 
-*{box-sizing:border-box;}
+body{margin:0;font-family:Segoe UI;background:#d7e7ff;height:100vh;overflow:hidden}
 
-body{
-  margin:0;
-  font-family:Segoe UI;
-  height:100vh;
-  background:#d7e7ff;
-  overflow:hidden;
+/* SPLASH */
+#splash{
+  position:fixed;inset:0;
+  background:#2b579a;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  color:white;
+  z-index:999;
 }
 
 /* AUTH */
-#auth{
-  position:fixed;
-  inset:0;
-  background:#1f3f73;
-  display:flex;
-  justify-content:center;
-  align-items:center;
-}
-
-.card{
-  width:340px;
-  background:white;
-  padding:20px;
-  border-radius:12px;
-}
+#auth{display:none;position:fixed;inset:0;background:#1f3f73;justify-content:center;align-items:center}
+.card{background:white;padding:20px;border-radius:12px;width:320px}
 
 /* APP */
-.app{
-  display:none;
-  height:100vh;
-  display:flex;
-}
+.app{display:none;height:100vh;display:flex}
 
-/* SIDEBAR */
-.sidebar{
-  width:260px;
-  background:#f5f8ff;
-  border-right:1px solid #cdd8ea;
-}
+.sidebar{width:250px;background:#f5f8ff;border-right:1px solid #ccc}
+.header{background:#2b579a;color:white;padding:10px}
 
-.header{
-  background:#2b579a;
-  color:white;
-  padding:10px;
-}
+.user{display:flex;align-items:center;padding:10px;cursor:pointer;margin:5px;background:white;border-radius:10px}
 
-/* USER */
-.user{
-  padding:10px;
-  margin:6px;
-  background:white;
-  display:flex;
-  justify-content:space-between;
-  cursor:pointer;
-  border-radius:10px;
-}
+.dot{width:8px;height:8px;border-radius:50%;margin-left:auto}
+.online{background:green}
+.offline{background:gray}
 
 /* CHAT */
-.chat{
-  flex:1;
-  display:flex;
-  flex-direction:column;
-}
+.chat{flex:1;display:flex;flex-direction:column}
 
-.chat-header{
-  background:#2b579a;
-  color:white;
-  padding:10px;
-}
+.box{flex:1;overflow:auto;padding:10px;display:flex;flex-direction:column;gap:6px}
 
-.box{
-  flex:1;
-  overflow-y:auto;
-  padding:15px;
-  display:flex;
-  flex-direction:column;
-  gap:6px;
-}
+.msg{padding:10px;border-radius:10px;max-width:70%}
+.me{background:#cfe6ff;align-self:flex-end}
+.other{background:white}
 
-.msg{
-  max-width:70%;
-  padding:10px;
-  border-radius:12px;
-  background:white;
-  word-break:break-word;
-}
+.input{display:flex;padding:10px;background:white}
 
-.me{
-  align-self:flex-end;
-  background:#cfe6ff;
-}
+.input input{flex:1;padding:10px;border-radius:20px}
 
-/* INPUT */
-.input-bar{
-  display:flex;
-  padding:10px;
-  background:white;
-}
+.input button{width:110px;margin-left:10px}
 
-.input-bar input{
-  flex:1;
-  padding:10px;
-  border-radius:20px;
-}
-
-.input-bar button{
-  width:90px;
-  margin-left:10px;
-}
-
-/* typing */
-#typing{
-  font-size:12px;
-  color:gray;
-  padding:5px 10px;
-  height:16px;
+/* SETTINGS */
+#settingsPanel{
+  position:fixed;top:50px;right:10px;
+  background:white;padding:10px;border-radius:10px;
+  display:none
 }
 
 </style>
@@ -131,12 +67,15 @@ body{
 
 <body>
 
+<!-- SPLASH -->
+<div id="splash">
+  <h1>💬 Buzzi Messenger</h1>
+</div>
+
 <!-- AUTH -->
 <div id="auth">
   <div class="card">
-
     <h3>Login / Register</h3>
-
     <input id="user" placeholder="username">
     <input id="pass" type="password" placeholder="password">
 
@@ -145,30 +84,35 @@ body{
       <option value="register">Register</option>
     </select>
 
-    <button onclick="auth()">Start</button>
-
+    <button onclick="auth()">Versturen</button>
   </div>
 </div>
+
+<!-- SETTINGS -->
+<div id="settingsPanel">
+  <input type="file" id="avatarInput">
+  <button onclick="saveAvatar()">Opslaan</button>
+</div>
+
+<button onclick="toggleSettings()" style="position:fixed;top:10px;right:10px">⚙</button>
 
 <!-- APP -->
 <div class="app" id="app">
 
   <div class="sidebar">
-    <div class="header">Contacten 😄</div>
+    <div class="header">Contacten</div>
     <div id="users"></div>
   </div>
 
   <div class="chat">
 
-    <div class="chat-header" id="chatTitle">Select chat</div>
+    <div class="header" id="chatTitle">Selecteer chat</div>
 
     <div class="box" id="box"></div>
 
-    <div id="typing"></div>
-
-    <div class="input-bar">
-      <input id="msg" oninput="typing()">
-      <button onclick="send()">Send 🚀</button>
+    <div class="input">
+      <input id="msg" oninput="typing()" placeholder="Typ bericht...">
+      <button onclick="send()">Versturen</button>
     </div>
 
   </div>
@@ -185,17 +129,14 @@ let me=null;
 let active=null;
 let typingTimeout;
 
-/* SAFE DOM */
-const authEl=document.getElementById("auth");
-const appEl=document.getElementById("app");
-const usersBox=document.getElementById("users");
-const box=document.getElementById("box");
-const msg=document.getElementById("msg");
-const typingEl=document.getElementById("typing");
-const chatTitle=document.getElementById("chatTitle");
-const user=document.getElementById("user");
-const pass=document.getElementById("pass");
-const mode=document.getElementById("mode");
+/* SOUND */
+const sound = new Audio("https://actions.google.com/sounds/v1/notifications/pling.ogg");
+
+/* SPLASH */
+setTimeout(()=>{
+  splash.style.display="none";
+  auth.style.display="flex";
+},1500);
 
 /* AUTH */
 function auth(){
@@ -206,26 +147,35 @@ function auth(){
   });
 }
 
-/* LOGIN */
 socket.on("login_success",(u)=>{
   me=u.username;
-  authEl.style.display="none";
-  appEl.style.display="flex";
+  auth.style.display="none";
+  app.style.display="flex";
+  enablePush();
 });
 
 /* USERS */
 socket.on("users",users=>{
-
   usersBox.innerHTML="";
 
   users.forEach(u=>{
 
     if(!u?.username || u.username===me) return;
 
+    const saved = localStorage.getItem("avatar_"+u.username);
+
+    const avatar = saved
+      ? `<img src="${saved}" style="width:28px;height:28px;border-radius:50%">`
+      : `<div style="width:28px;height:28px;border-radius:50%;background:#2b579a;color:white;display:flex;align-items:center;justify-content:center">${u.username[0]}</div>`;
+
     const d=document.createElement("div");
     d.className="user";
 
-    d.innerHTML=`💬 ${u.username}`;
+    d.innerHTML=`
+      ${avatar}
+      <span style="margin-left:8px">${u.username}</span>
+      <div class="dot ${u.status}"></div>
+    `;
 
     d.onclick=()=>{
       active=u.username;
@@ -235,11 +185,16 @@ socket.on("users",users=>{
 
     usersBox.appendChild(d);
   });
-
 });
 
 /* CHAT */
-socket.on("chat_message",()=>{
+socket.on("chat_message",(m)=>{
+  sound.play();
+
+  if(Notification.permission==="granted"){
+    new Notification("Buzzi", { body: m.text });
+  }
+
   if(active){
     socket.emit("get_history",{userA:me,userB:active});
   }
@@ -249,7 +204,6 @@ socket.on("history",render);
 
 /* SEND */
 function send(){
-
   if(!msg.value||!active) return;
 
   socket.emit("chat_message",{
@@ -264,42 +218,50 @@ function send(){
 
 /* TYPING */
 function typing(){
-
-  if(!active) return;
-
   socket.emit("typing",{from:me,to:active});
-
   clearTimeout(typingTimeout);
-
   typingTimeout=setTimeout(()=>{
     socket.emit("stop_typing",{from:me,to:active});
-  },700);
+  },600);
 }
-
-socket.on("typing",d=>{
-  if(d.from===active){
-    typingEl.innerText=active+" is aan het typen... ✍️";
-  }
-});
-
-socket.on("stop_typing",()=>typingEl.innerText="");
 
 /* RENDER */
 function render(msgs){
-
   box.innerHTML="";
 
   msgs.forEach(m=>{
-
     const d=document.createElement("div");
-    d.className="msg "+(m.from===me?"me":"");
-
-    d.innerText=`${m.text} 😄`;
-
+    d.className="msg "+(m.from===me?"me":"other");
+    d.innerText=m.text;
     box.appendChild(d);
   });
 
   box.scrollTop=box.scrollHeight;
+}
+
+/* SETTINGS */
+function toggleSettings(){
+  settingsPanel.style.display =
+    settingsPanel.style.display==="block"?"none":"block";
+}
+
+function saveAvatar(){
+  const file = avatarInput.files[0];
+  if(!file) return;
+
+  const r = new FileReader();
+  r.onload = e=>{
+    localStorage.setItem("avatar_"+me, e.target.result);
+    alert("Opgeslagen");
+  };
+  r.readAsDataURL(file);
+}
+
+/* PUSH */
+async function enablePush(){
+  if("Notification" in window){
+    await Notification.requestPermission();
+  }
 }
 
 </script>
