@@ -49,7 +49,6 @@ body{
   flex-direction:row;
 }
 
-/* USERS */
 .sidebar{
   width:250px;
   background:#f4f7ff;
@@ -63,7 +62,6 @@ body{
   cursor:pointer;
 }
 
-/* CHAT */
 .chat{
   flex:1;
   display:flex;
@@ -94,7 +92,6 @@ body{
 .me{background:#cfe6ff;align-self:flex-end}
 .other{background:white}
 
-/* INPUT */
 .input{
   display:flex;
   padding:10px;
@@ -106,18 +103,7 @@ body{
   padding:10px;
 }
 
-/* EMOJI */
-#emoji{
-  display:none;
-  position:absolute;
-  bottom:70px;
-  right:20px;
-  background:white;
-  padding:10px;
-  border-radius:10px;
-}
-
-/* MOBILE FIX */
+/* MOBILE */
 @media(max-width:768px){
   #app{flex-direction:column}
   .sidebar{width:100%;display:flex}
@@ -147,7 +133,7 @@ body{
       <option value="register">Registreren</option>
     </select><br><br>
 
-    <button onclick="auth()">Start</button>
+    <button onclick="authUser()">Start</button>
   </div>
 </div>
 
@@ -161,11 +147,7 @@ body{
 
   <div class="chat">
 
-    <div class="header">
-      Chat
-      <button onclick="toggleEmoji()">😊</button>
-      <button onclick="toggleSettings()">⚙</button>
-    </div>
+    <div class="header">Chat</div>
 
     <div id="box" class="box"></div>
 
@@ -178,106 +160,109 @@ body{
 
 </div>
 
-<!-- EMOJI -->
-<div id="emoji">
-  😀 😄 😎 ❤️ 🔥 👍 😂
-</div>
-
-<audio id="sound" src="data:audio/mp3;base64,//uQx..." />
-
 <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 
 <script>
 
 const socket = io("https://buzzimessenger.onrender.com");
 
-let me=null;
-let active=null;
+/* =========================
+   SAFE DOM REFERENCES
+========================= */
+const authBox = document.getElementById("auth");
+const appBox = document.getElementById("app");
+const splashBox = document.getElementById("splash");
+const usersBox = document.getElementById("users");
 
-setTimeout(()=>{
-  splash.style.display="none";
-  auth.style.display="flex";
-},1500);
+/* STATE */
+let me = null;
+let active = null;
 
-function auth(){
-  socket.emit("auth",{
-    user:user.value,
-    pass:pass.value,
-    mode:mode.value
+/* SPLASH */
+setTimeout(() => {
+  splashBox.style.display = "none";
+  authBox.style.display = "flex";
+}, 1500);
+
+/* AUTH */
+function authUser() {
+
+  socket.emit("auth", {
+    user: user.value,
+    pass: pass.value,
+    mode: mode.value
   });
+
 }
 
-socket.on("login_ok",(u)=>{
-  me=u.username;
-  auth.style.display="none";
-  app.style.display="flex";
+/* LOGIN OK */
+socket.on("login_ok", (u) => {
+  me = u.username;
+  authBox.style.display = "none";
+  appBox.style.display = "flex";
 });
 
-socket.on("error_msg",(m)=>{
-  alert(m);
+/* ERROR NL */
+socket.on("error_msg", (m) => {
+  alert("Fout: " + m);
 });
 
-socket.on("users",(users)=>{
-  const box=document.getElementById("users");
-  box.innerHTML="";
+/* USERS */
+socket.on("users", (users) => {
 
-  users.forEach(u=>{
-    if(u.username===me) return;
+  if (!usersBox) return;
 
-    const d=document.createElement("div");
-    d.className="user";
-    d.innerText=u.username + " ("+u.status+")";
+  usersBox.innerHTML = "";
 
-    d.onclick=()=>{
-      active=u.username;
-      socket.emit("history",{a:me,b:active});
+  users.forEach(u => {
+
+    if (u.username === me) return;
+
+    const d = document.createElement("div");
+    d.className = "user";
+    d.innerText = u.username + " (" + u.status + ")";
+
+    d.onclick = () => {
+      active = u.username;
+      socket.emit("history", { a: me, b: active });
     };
 
+    usersBox.appendChild(d);
+
+  });
+
+});
+
+/* HISTORY */
+socket.on("history", (msgs) => {
+
+  const box = document.getElementById("box");
+  box.innerHTML = "";
+
+  msgs.forEach(m => {
+
+    const d = document.createElement("div");
+    d.className = "msg " + (m.from === me ? "me" : "other");
+    d.innerText = m.text;
+
     box.appendChild(d);
-  });
-});
 
-socket.on("history",(msgs)=>{
-  const box=document.getElementById("box");
-  box.innerHTML="";
-
-  msgs.forEach(m=>{
-    const d=document.createElement("div");
-    d.className="msg "+(m.from===me?"me":"other");
-    d.innerText=m.text;
-    box.appendChild(d);
-  });
-});
-
-socket.on("msg",(m)=>{
-  const sound=document.getElementById("sound");
-  sound.play().catch(()=>{});
-
-  const box=document.getElementById("box");
-  const d=document.createElement("div");
-  d.className="msg "+(m.from===me?"me":"other");
-  d.innerText=m.text;
-  box.appendChild(d);
-});
-
-function send(){
-  socket.emit("msg",{
-    from:me,
-    to:active,
-    text:msg.value,
-    time:Date.now()
   });
 
-  msg.value="";
-}
+});
 
-function toggleEmoji(){
-  const e=document.getElementById("emoji");
-  e.style.display = e.style.display==="block"?"none":"block";
-}
+/* SEND */
+function send() {
 
-function toggleSettings(){
-  alert("Instellingen komen in v2");
+  socket.emit("msg", {
+    from: me,
+    to: active,
+    text: msg.value,
+    time: Date.now()
+  });
+
+  msg.value = "";
+
 }
 
 </script>
