@@ -6,193 +6,195 @@
 
 <style>
 
-body{
-  margin:0;
-  font-family:Segoe UI;
-  background:#e7f0ff;
-  overflow:hidden;
+/* =========================
+   BASE FIX (BELANGRIJK)
+========================= */
+
+html, body {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  font-family: Segoe UI;
+  background: #e7f0ff;
 }
 
-/* SPLASH */
-#splash{
-  position:fixed;
-  inset:0;
-  background:#2b579a;
-  color:white;
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  flex-direction:column;
+/* =========================
+   SPLASH
+========================= */
+
+#splash {
+  position: fixed;
+  inset: 0;
+  background: #2b579a;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
 }
 
-/* LOGIN */
-#auth{
-  position:fixed;
-  inset:0;
-  display:none;
-  justify-content:center;
-  align-items:center;
-  background:#1f3f73;
+/* =========================
+   LOGIN
+========================= */
+
+#auth {
+  position: fixed;
+  inset: 0;
+  display: none;
+  justify-content: center;
+  align-items: center;
+  background: #1f3f73;
 }
 
-.card{
-  background:white;
-  padding:20px;
-  border-radius:12px;
-  width:300px;
+.card {
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  width: 300px;
 }
 
-/* APP LAYOUT */
-#app{
-  display:none;
-  height:100vh;
-  flex-direction:row;
+/* =========================
+   APP STRUCTUUR (FIXED)
+========================= */
+
+#app {
+  display: none;
+  height: 100dvh;
+  width: 100%;
+  display: flex;
+  overflow: hidden;
 }
 
-/* SIDEBAR */
-.sidebar{
-  width:250px;
-  background:#f4f7ff;
-  overflow:auto;
+/* USERS SIDEBAR */
+.sidebar {
+  width: 260px;
+  background: #f4f7ff;
+  overflow-y: auto;
+  flex-shrink: 0;
 }
 
-.user{
-  padding:10px;
-  margin:5px;
-  background:white;
-  cursor:pointer;
+.user {
+  padding: 10px;
+  margin: 5px;
+  background: white;
+  cursor: pointer;
 }
 
-/* CHAT */
-.chat{
-  flex:1;
-  display:flex;
-  flex-direction:column;
+/* CHAT AREA */
+.chat {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
-.header{
-  background:#2b579a;
-  color:white;
-  padding:10px;
-  display:flex;
-  justify-content:space-between;
+/* HEADER */
+.header {
+  background: #2b579a;
+  color: white;
+  padding: 10px;
+  display: flex;
+  justify-content: space-between;
 }
 
-.box{
-  flex:1;
-  padding:10px;
-  overflow:auto;
-  display:flex;
-  flex-direction:column;
-  gap:10px;
+/* MESSAGES (ENIGE SCROLL AREA) */
+.messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
 }
 
-.msg{
-  padding:10px;
-  border-radius:12px;
-  max-width:60%;
+/* BUBBLES */
+.msg {
+  padding: 10px;
+  border-radius: 12px;
+  max-width: 65%;
+  word-wrap: break-word;
 }
 
-.me{background:#cfe6ff;align-self:flex-end}
-.other{background:white}
-
-/* INPUT */
-.input{
-  display:flex;
-  padding:10px;
-  background:white;
+.me {
+  background: #cfe6ff;
+  align-self: flex-end;
 }
 
-.input input{
-  flex:1;
-  padding:10px;
+.other {
+  background: white;
 }
 
-/* SETTINGS */
-#settings{
-  display:none;
-  position:fixed;
-  right:10px;
-  top:60px;
-  background:white;
-  padding:15px;
-  border-radius:10px;
-  width:220px;
-  box-shadow:0 0 10px rgba(0,0,0,0.2);
+/* INPUT FIXED ONDERIN */
+.input {
+  display: flex;
+  padding: 10px;
+  background: white;
+  flex-shrink: 0;
 }
 
-.avatar{
-  width:40px;
-  height:40px;
-  border-radius:50%;
-  margin-right:5px;
-  cursor:pointer;
-  border:2px solid transparent;
+.input input {
+  flex: 1;
+  padding: 10px;
+  font-size: 16px;
 }
 
-.avatar.selected{
-  border:2px solid #2b579a;
+/* =========================
+   SETTINGS
+========================= */
+
+#settings {
+  display: none;
+  position: fixed;
+  right: 10px;
+  top: 60px;
+  background: white;
+  padding: 15px;
+  border-radius: 10px;
+  width: 220px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.2);
+  z-index: 999;
 }
 
-/* MOBILE FIX */
+.avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  margin: 5px;
+  cursor: pointer;
+  border: 2px solid transparent;
+}
+
+.avatar.selected {
+  border: 2px solid #2b579a;
+}
+
+/* =========================
+   MOBILE FIX (STABIEL)
+========================= */
+
 @media (max-width: 768px) {
 
-  html, body {
-    height: 100%;
-    margin: 0;
-    overflow: hidden;
-  }
-
-  /* BELANGRIJK: moderne mobile hoogte */
   #app {
-    display: flex;
     flex-direction: column;
-    height: 100dvh; /* FIX voor mobile browsers */
-    max-height: 100dvh;
+    height: 100dvh;
   }
 
-  /* USERS BAR */
   .sidebar {
     width: 100%;
-    height: 70px;
+    height: 80px;
     display: flex;
-    flex-direction: row;
     overflow-x: auto;
-    flex-shrink: 0;
   }
 
   .user {
     min-width: 120px;
+    text-align: center;
     flex-shrink: 0;
-    font-size: 13px;
   }
 
-  /* CHAT AREA */
-  .chat {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    min-height: 0; /* CRUCIAAL */
-  }
-
-  /* MESSAGES */
-  .box {
-    flex: 1;
-    overflow-y: auto;
-    min-height: 0; /* CRUCIAAL */
-    -webkit-overflow-scrolling: touch;
-  }
-
-  /* INPUT BLIJFT VAST */
-  .input {
-    flex-shrink: 0;
-    position: relative;
-    bottom: 0;
-    background: white;
-  }
-
-  .input input {
-    font-size: 16px; /* voorkomt iOS zoom bug */
+  .messages {
+    padding-bottom: 5px;
   }
 
 }
@@ -213,7 +215,7 @@ body{
   <div class="card">
     <h3>Inloggen / Registreren</h3>
 
-    <input id="user" placeholder="Gebruiker"><br><br>
+    <input id="user" placeholder="Gebruikersnaam"><br><br>
     <input id="pass" type="password" placeholder="Wachtwoord"><br><br>
 
     <select id="mode">
@@ -239,10 +241,10 @@ body{
       <button onclick="toggleSettings()">⚙</button>
     </div>
 
-    <div id="box" class="box"></div>
+    <div id="messages" class="messages"></div>
 
     <div class="input">
-      <input id="msg">
+      <input id="msg" placeholder="Typ bericht...">
       <button onclick="send()">Versturen</button>
     </div>
 
@@ -254,16 +256,15 @@ body{
 <div id="settings">
 
   <h4>Status</h4>
-
   <button onclick="setStatus('online')">🟢 Online</button>
   <button onclick="setStatus('offline')">🔴 Offline</button>
 
   <h4>Profielfoto</h4>
 
   <div>
-    <img class="avatar" src="https://i.pravatar.cc/100?img=1" onclick="setAvatar(this)">
-    <img class="avatar" src="https://i.pravatar.cc/100?img=2" onclick="setAvatar(this)">
-    <img class="avatar" src="https://i.pravatar.cc/100?img=3" onclick="setAvatar(this)">
+    <img class="avatar" src="https://api.dicebear.com/7.x/bottts/svg?seed=chat1" onclick="setAvatar(this)">
+    <img class="avatar" src="https://api.dicebear.com/7.x/bottts/svg?seed=chat2" onclick="setAvatar(this)">
+    <img class="avatar" src="https://api.dicebear.com/7.x/bottts/svg?seed=chat3" onclick="setAvatar(this)">
   </div>
 
 </div>
@@ -277,7 +278,9 @@ const socket = io("https://buzzimessenger.onrender.com");
 const authBox = document.getElementById("auth");
 const appBox = document.getElementById("app");
 const splashBox = document.getElementById("splash");
+
 const usersBox = document.getElementById("users");
+const messagesBox = document.getElementById("messages");
 
 let me = null;
 let active = null;
@@ -315,11 +318,7 @@ socket.on("users",(users)=>{
 
     const d=document.createElement("div");
     d.className="user";
-
-    d.innerHTML = `
-      ${u.username}<br>
-      <small>${u.status || "offline"}</small>
-    `;
+    d.innerHTML = `${u.username}<br><small>${u.status}</small>`;
 
     d.onclick=()=>{
       active=u.username;
@@ -331,22 +330,36 @@ socket.on("users",(users)=>{
 
 });
 
-/* CHAT */
+/* HISTORY */
 socket.on("history",(msgs)=>{
-  const box=document.getElementById("box");
-  box.innerHTML="";
+
+  messagesBox.innerHTML="";
 
   msgs.forEach(m=>{
     const d=document.createElement("div");
     d.className="msg "+(m.from===me?"me":"other");
     d.innerText=m.text;
-    box.appendChild(d);
+    messagesBox.appendChild(d);
   });
+
+});
+
+/* NEW MESSAGE */
+socket.on("msg",(m)=>{
+
+  const d=document.createElement("div");
+  d.className="msg "+(m.from===me?"me":"other");
+  d.innerText=m.text;
+
+  messagesBox.appendChild(d);
 
 });
 
 /* SEND */
 function send(){
+
+  if(!active) return;
+
   socket.emit("msg",{
     from:me,
     to:active,
@@ -365,7 +378,6 @@ function toggleSettings(){
 
 function setStatus(s){
   status=s;
-  alert("Status: "+s);
   socket.emit("status_update",{user:me,status:s});
 }
 
@@ -373,7 +385,6 @@ function setAvatar(el){
   document.querySelectorAll(".avatar").forEach(a=>a.classList.remove("selected"));
   el.classList.add("selected");
   avatar = el.src;
-  alert("Profielfoto gekozen");
 }
 
 </script>
