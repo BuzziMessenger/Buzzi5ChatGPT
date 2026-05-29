@@ -20,9 +20,9 @@ body{
   background:#2b579a;
   color:white;
   display:flex;
-  flex-direction:column;
   justify-content:center;
   align-items:center;
+  flex-direction:column;
 }
 
 /* LOGIN */
@@ -38,17 +38,18 @@ body{
 .card{
   background:white;
   padding:20px;
-  border-radius:14px;
+  border-radius:12px;
   width:300px;
 }
 
-/* APP */
+/* APP LAYOUT */
 #app{
   display:none;
   height:100vh;
   flex-direction:row;
 }
 
+/* SIDEBAR */
 .sidebar{
   width:250px;
   background:#f4f7ff;
@@ -62,6 +63,7 @@ body{
   cursor:pointer;
 }
 
+/* CHAT */
 .chat{
   flex:1;
   display:flex;
@@ -72,6 +74,8 @@ body{
   background:#2b579a;
   color:white;
   padding:10px;
+  display:flex;
+  justify-content:space-between;
 }
 
 .box{
@@ -92,6 +96,7 @@ body{
 .me{background:#cfe6ff;align-self:flex-end}
 .other{background:white}
 
+/* INPUT */
 .input{
   display:flex;
   padding:10px;
@@ -103,11 +108,51 @@ body{
   padding:10px;
 }
 
-/* MOBILE */
+/* SETTINGS */
+#settings{
+  display:none;
+  position:fixed;
+  right:10px;
+  top:60px;
+  background:white;
+  padding:15px;
+  border-radius:10px;
+  width:220px;
+  box-shadow:0 0 10px rgba(0,0,0,0.2);
+}
+
+.avatar{
+  width:40px;
+  height:40px;
+  border-radius:50%;
+  margin-right:5px;
+  cursor:pointer;
+  border:2px solid transparent;
+}
+
+.avatar.selected{
+  border:2px solid #2b579a;
+}
+
+/* MOBILE FIX */
 @media(max-width:768px){
-  #app{flex-direction:column}
-  .sidebar{width:100%;display:flex}
-  .user{min-width:120px}
+
+  #app{
+    flex-direction:column;
+  }
+
+  .sidebar{
+    width:100%;
+    height:90px;
+    display:flex;
+    overflow-x:auto;
+  }
+
+  .user{
+    min-width:120px;
+    text-align:center;
+  }
+
 }
 
 </style>
@@ -125,7 +170,8 @@ body{
 <div id="auth">
   <div class="card">
     <h3>Inloggen / Registreren</h3>
-    <input id="user" placeholder="Gebruikersnaam"><br><br>
+
+    <input id="user" placeholder="Gebruiker"><br><br>
     <input id="pass" type="password" placeholder="Wachtwoord"><br><br>
 
     <select id="mode">
@@ -133,7 +179,7 @@ body{
       <option value="register">Registreren</option>
     </select><br><br>
 
-    <button onclick="authUser()">Start</button>
+    <button onclick="login()">Start</button>
   </div>
 </div>
 
@@ -141,13 +187,15 @@ body{
 <div id="app">
 
   <div class="sidebar">
-    <div class="header">Contacten</div>
     <div id="users"></div>
   </div>
 
   <div class="chat">
 
-    <div class="header">Chat</div>
+    <div class="header">
+      <div>Chat</div>
+      <button onclick="toggleSettings()">⚙</button>
+    </div>
 
     <div id="box" class="box"></div>
 
@@ -160,23 +208,39 @@ body{
 
 </div>
 
+<!-- SETTINGS -->
+<div id="settings">
+
+  <h4>Status</h4>
+
+  <button onclick="setStatus('online')">🟢 Online</button>
+  <button onclick="setStatus('offline')">🔴 Offline</button>
+
+  <h4>Profielfoto</h4>
+
+  <div>
+    <img class="avatar" src="https://i.pravatar.cc/100?img=1" onclick="setAvatar(this)">
+    <img class="avatar" src="https://i.pravatar.cc/100?img=2" onclick="setAvatar(this)">
+    <img class="avatar" src="https://i.pravatar.cc/100?img=3" onclick="setAvatar(this)">
+  </div>
+
+</div>
+
 <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 
 <script>
 
 const socket = io("https://buzzimessenger.onrender.com");
 
-/* =========================
-   SAFE DOM REFERENCES
-========================= */
 const authBox = document.getElementById("auth");
 const appBox = document.getElementById("app");
 const splashBox = document.getElementById("splash");
 const usersBox = document.getElementById("users");
 
-/* STATE */
 let me = null;
 let active = null;
+let status = "online";
+let avatar = null;
 
 /* SPLASH */
 setTimeout(() => {
@@ -184,85 +248,90 @@ setTimeout(() => {
   authBox.style.display = "flex";
 }, 1500);
 
-/* AUTH */
-function authUser() {
-
-  socket.emit("auth", {
-    user: user.value,
-    pass: pass.value,
-    mode: mode.value
+/* LOGIN */
+function login(){
+  socket.emit("auth",{
+    user:user.value,
+    pass:pass.value,
+    mode:mode.value
   });
-
 }
 
-/* LOGIN OK */
-socket.on("login_ok", (u) => {
+socket.on("login_ok",(u)=>{
   me = u.username;
   authBox.style.display = "none";
   appBox.style.display = "flex";
 });
 
-/* ERROR NL */
-socket.on("error_msg", (m) => {
-  alert("Fout: " + m);
-});
-
 /* USERS */
-socket.on("users", (users) => {
+socket.on("users",(users)=>{
 
-  if (!usersBox) return;
+  usersBox.innerHTML="";
 
-  usersBox.innerHTML = "";
+  users.forEach(u=>{
+    if(u.username === me) return;
 
-  users.forEach(u => {
+    const d=document.createElement("div");
+    d.className="user";
 
-    if (u.username === me) return;
+    d.innerHTML = `
+      ${u.username}<br>
+      <small>${u.status || "offline"}</small>
+    `;
 
-    const d = document.createElement("div");
-    d.className = "user";
-    d.innerText = u.username + " (" + u.status + ")";
-
-    d.onclick = () => {
-      active = u.username;
-      socket.emit("history", { a: me, b: active });
+    d.onclick=()=>{
+      active=u.username;
+      socket.emit("history",{a:me,b:active});
     };
 
     usersBox.appendChild(d);
-
   });
 
 });
 
-/* HISTORY */
-socket.on("history", (msgs) => {
+/* CHAT */
+socket.on("history",(msgs)=>{
+  const box=document.getElementById("box");
+  box.innerHTML="";
 
-  const box = document.getElementById("box");
-  box.innerHTML = "";
-
-  msgs.forEach(m => {
-
-    const d = document.createElement("div");
-    d.className = "msg " + (m.from === me ? "me" : "other");
-    d.innerText = m.text;
-
+  msgs.forEach(m=>{
+    const d=document.createElement("div");
+    d.className="msg "+(m.from===me?"me":"other");
+    d.innerText=m.text;
     box.appendChild(d);
-
   });
 
 });
 
 /* SEND */
-function send() {
-
-  socket.emit("msg", {
-    from: me,
-    to: active,
-    text: msg.value,
-    time: Date.now()
+function send(){
+  socket.emit("msg",{
+    from:me,
+    to:active,
+    text:msg.value,
+    time:Date.now()
   });
 
-  msg.value = "";
+  msg.value="";
+}
 
+/* SETTINGS */
+function toggleSettings(){
+  const s=document.getElementById("settings");
+  s.style.display = s.style.display==="block"?"none":"block";
+}
+
+function setStatus(s){
+  status=s;
+  alert("Status: "+s);
+  socket.emit("status_update",{user:me,status:s});
+}
+
+function setAvatar(el){
+  document.querySelectorAll(".avatar").forEach(a=>a.classList.remove("selected"));
+  el.classList.add("selected");
+  avatar = el.src;
+  alert("Profielfoto gekozen");
 }
 
 </script>
