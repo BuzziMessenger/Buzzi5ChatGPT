@@ -9,55 +9,40 @@ const bcrypt = require("bcrypt");
 
 const app = express();
 
-/* =========================
-   CORS FIX (EXPRESS)
-========================= */
 app.use(cors({
-  origin: "*",
-  methods: ["GET", "POST"]
+  origin: "*"
 }));
 
 const server = http.createServer(app);
 
-/* =========================
-   SOCKET.IO FIX (BELANGRIJK)
-========================= */
 const io = new Server(server, {
   cors: {
     origin: "*",
-    methods: ["GET", "POST"],
-    credentials: true
+    methods: ["GET", "POST"]
   },
   transports: ["websocket", "polling"]
 });
 
-/* =========================
-   MONGODB
-========================= */
+/* DB */
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log("MongoDB connected"))
-  .catch(err => console.log("MongoDB error:", err));
+  .catch(err => console.log(err));
 
-const userSchema = new mongoose.Schema({
+const User = mongoose.model("User", {
   name: String,
   password: String,
   status: String,
   avatar: String
 });
 
-const messageSchema = new mongoose.Schema({
+const Message = mongoose.model("Message", {
   from: String,
   to: String,
   text: String,
   time: Number
 });
 
-const User = mongoose.model("User", userSchema);
-const Message = mongoose.model("Message", messageSchema);
-
-/* =========================
-   SOCKET LOGIC
-========================= */
+/* SOCKET */
 io.on("connection", (socket) => {
 
   console.log("user connected");
@@ -74,7 +59,7 @@ io.on("connection", (socket) => {
         name: user,
         password: hash,
         status: "online",
-        avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${user}`
+        avatar: ""
       });
     }
 
@@ -96,13 +81,7 @@ io.on("connection", (socket) => {
     io.emit("users", users);
   });
 
-  /* USERS */
-  socket.on("get_users", async () => {
-    const users = await User.find({});
-    socket.emit("users", users);
-  });
-
-  /* CHAT MESSAGE */
+  /* CHAT */
   socket.on("chat_message", async (msg) => {
 
     const saved = await Message.create({
@@ -143,11 +122,8 @@ io.on("connection", (socket) => {
 
 });
 
-/* =========================
-   START SERVER (RENDER FIX)
-========================= */
 const PORT = process.env.PORT || 3000;
 
 server.listen(PORT, "0.0.0.0", () => {
-  console.log("BUZZI FIXED SERVER RUNNING ON PORT", PORT);
+  console.log("BUZZI CLEAN V5 RUNNING");
 });
