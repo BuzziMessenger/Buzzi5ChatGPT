@@ -7,7 +7,11 @@ const app = express();
 const server = http.createServer(app);
 
 const io = new Server(server, {
-  cors: { origin: "*" }
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"]
+  },
+  transports: ["polling", "websocket"]
 });
 
 mongoose.connect("YOUR_MONGO_URI");
@@ -30,28 +34,21 @@ io.on("connection", (socket) => {
   socket.on("register", async ({ user, pass, mode }) => {
 
     if (!user || !pass) {
-      socket.emit("login_error", "missing");
-      return;
+      return socket.emit("login_error", "missing");
     }
 
     try {
 
       if (mode === "register") {
         const exists = await User.findOne({ username: user });
-        if (exists) {
-          socket.emit("login_error", "exists");
-          return;
-        }
+        if (exists) return socket.emit("login_error", "exists");
 
         await User.create({ username: user, password: pass });
       }
 
       const found = await User.findOne({ username: user, password: pass });
 
-      if (!found) {
-        socket.emit("login_error", "wrong");
-        return;
-      }
+      if (!found) return socket.emit("login_error", "wrong");
 
       socket.username = user;
       socket.join(user);
@@ -109,5 +106,5 @@ io.on("connection", (socket) => {
 });
 
 server.listen(10000, () => {
-  console.log("BUZZI STABLE RUNNING");
+  console.log("BUZZI STABLE READY");
 });
