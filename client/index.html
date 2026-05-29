@@ -3,15 +3,18 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Buzzi v1.1</title>
+<title>Buzzi Messenger V12.1 Final</title>
 
 <style>
+
+* { box-sizing:border-box; }
 
 body {
   margin:0;
   font-family:Segoe UI;
-  background:#d7e7ff;
   height:100vh;
+  background:linear-gradient(135deg,#d7e7ff,#bcd6ff);
+  overflow:hidden;
 }
 
 /* AUTH */
@@ -28,86 +31,119 @@ body {
   width:340px;
   background:white;
   padding:20px;
-  border-radius:10px;
-}
-
-input {
-  width:100%;
-  padding:10px;
-  margin:6px 0;
-}
-
-button {
-  width:100%;
-  padding:10px;
-  background:#2b579a;
-  color:white;
-  border:none;
-}
-
-.switch {
-  text-align:center;
-  font-size:12px;
-  margin-top:10px;
-  cursor:pointer;
-  color:#2b579a;
+  border-radius:12px;
 }
 
 /* APP */
 .app {
   display:none;
   height:100vh;
-  display:flex;
 }
 
+/* SIDEBAR */
 .sidebar {
   width:260px;
-  background:#f5f8ff;
+  background:rgba(255,255,255,0.75);
+  backdrop-filter: blur(10px);
+  border-right:1px solid #cdd8ea;
 }
 
 .header {
   background:#2b579a;
   color:white;
   padding:10px;
+  font-weight:bold;
 }
 
 .user {
   padding:10px;
-  margin:5px;
+  margin:6px;
   background:white;
+  border-radius:10px;
+  display:flex;
+  justify-content:space-between;
   cursor:pointer;
 }
 
+.dot {
+  width:9px;
+  height:9px;
+  border-radius:50%;
+  background:gray;
+}
+
+.online { background:limegreen; }
+
+/* CHAT */
 .chat {
   flex:1;
   display:flex;
   flex-direction:column;
 }
 
+.chat-header {
+  background:#2b579a;
+  color:white;
+  padding:10px;
+}
+
+/* BOX */
 .box {
   flex:1;
-  padding:10px;
   overflow-y:auto;
+  padding:15px;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  background:#eaf2ff;
 }
 
 .msg {
+  max-width:70%;
+  padding:10px;
+  border-radius:12px;
   background:white;
-  padding:8px;
-  margin:5px;
+  word-break:break-word;
 }
 
 .me {
+  align-self:flex-end;
   background:#cfe6ff;
-  margin-left:auto;
 }
 
-.input {
+/* INPUT */
+.input-bar {
   display:flex;
+  padding:10px;
+  background:white;
+  border-top:1px solid #cdd8ea;
 }
 
-.input input {
+.input-bar input {
   flex:1;
   padding:10px;
+  border-radius:20px;
+}
+
+.input-bar button {
+  width:90px;
+  margin-left:10px;
+  border-radius:20px;
+}
+
+/* typing */
+#typing {
+  font-size:12px;
+  color:gray;
+  padding:4px 10px;
+  height:16px;
+}
+
+/* mobile fix */
+@media(max-width:768px){
+  .sidebar{width:90px;}
+  .user span{display:none;}
+  .msg{max-width:85%;}
 }
 
 </style>
@@ -118,18 +154,10 @@ button {
 <!-- AUTH -->
 <div id="auth">
   <div class="card">
-
-    <h3 id="title">Login</h3>
-
+    <h3>Login</h3>
     <input id="user" placeholder="Username">
     <input id="pass" type="password" placeholder="Password">
-
     <button onclick="auth()">Login</button>
-
-    <div class="switch" onclick="toggleMode()">
-      Nog geen account? Register hier
-    </div>
-
   </div>
 </div>
 
@@ -142,11 +170,15 @@ button {
   </div>
 
   <div class="chat">
-    <div class="header" id="chatTitle">Select chat</div>
+
+    <div class="chat-header" id="chatTitle">Select chat</div>
+
     <div class="box" id="box"></div>
 
-    <div class="input">
-      <input id="msg">
+    <div id="typing"></div>
+
+    <div class="input-bar">
+      <input id="msg" oninput="typing()">
       <button onclick="send()">Send</button>
     </div>
 
@@ -162,65 +194,57 @@ const socket = io("https://buzzimessenger.onrender.com");
 
 let me = null;
 let active = null;
-let mode = "login";
-
-/* TOGGLE */
-function toggleMode(){
-
-  const title = document.getElementById("title");
-
-  mode = mode === "login" ? "register" : "login";
-
-  title.innerText = mode === "login" ? "Login" : "Register";
-}
+let typingTimeout;
 
 /* AUTH */
 function auth(){
-
-  const user = document.getElementById("user").value;
-  const pass = document.getElementById("pass").value;
-
-  socket.emit("register", { user, pass, mode });
+  socket.emit("register", {
+    user: user.value,
+    pass: pass.value,
+    mode: "login"
+  });
 }
 
-/* LOGIN SUCCESS */
+/* LOGIN */
 socket.on("login_success", (u) => {
-
   me = u.username;
-
-  document.getElementById("auth").style.display = "none";
-  document.getElementById("app").style.display = "flex";
+  auth.style.display = "none";
+  app.style.display = "flex";
 });
 
-/* USERS */
-socket.on("users", (users) => {
+/* USERS SAFE */
+socket.on("users", users => {
 
-  const box = document.getElementById("users");
-  box.innerHTML = "";
+  usersBox.innerHTML = "";
 
   users.forEach(u => {
 
-    /* 🔴 FIX: NO UNDEFINED USERS */
-    if (!u || !u.username) return;
-    if (u.username === me) return;
+    if(!u || !u.username) return;
+    if(u.username === me) return;
 
     const d = document.createElement("div");
     d.className = "user";
-    d.innerText = u.username;
+
+    d.innerHTML = `
+      <span>${u.username}</span>
+      <div class="dot ${u.status==="online"?"online":""}"></div>
+    `;
 
     d.onclick = () => {
       active = u.username;
-      socket.emit("get_history", { userA: me, userB: u.username });
-      document.getElementById("chatTitle").innerText = "Chat met " + u.username;
+      socket.emit("get_history", { userA: me, userB: active });
+      chatTitle.innerText = "Chat met " + active;
     };
 
-    box.appendChild(d);
+    usersBox.appendChild(d);
   });
+
 });
 
 /* HISTORY */
 socket.on("history", render);
 
+/* CHAT UPDATE */
 socket.on("chat_message", () => {
   if(active){
     socket.emit("get_history", { userA: me, userB: active });
@@ -230,33 +254,60 @@ socket.on("chat_message", () => {
 /* SEND */
 function send(){
 
-  const i = document.getElementById("msg");
-  if(!i.value || !active) return;
+  if(!msg.value || !active) return;
 
   socket.emit("chat_message", {
     from: me,
     to: active,
-    text: i.value
+    text: msg.value,
+    time: Date.now()
   });
 
-  i.value = "";
+  msg.value = "";
 }
+
+/* TYPING */
+function typing(){
+
+  if(!active) return;
+
+  socket.emit("typing", { from: me, to: active });
+
+  clearTimeout(typingTimeout);
+
+  typingTimeout = setTimeout(() => {
+    socket.emit("stop_typing", { from: me, to: active });
+  }, 700);
+}
+
+socket.on("typing", d => {
+  if(d.from === active){
+    typing.innerText = active + " is aan het typen...";
+  }
+});
+
+socket.on("stop_typing", () => typing.innerText = "");
 
 /* RENDER */
 function render(msgs){
 
-  const box = document.getElementById("box");
   box.innerHTML = "";
 
   msgs.forEach(m => {
 
+    const time = m.time
+      ? new Date(m.time).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})
+      : "";
+
     const d = document.createElement("div");
     d.className = "msg " + (m.from === me ? "me" : "");
-    d.innerText = m.from + ": " + m.text;
+
+    d.innerText = `${m.from}: ${m.text}${time ? " ("+time+")" : ""}`;
 
     box.appendChild(d);
   });
 
+  box.scrollTop = box.scrollHeight;
 }
 
 </script>
