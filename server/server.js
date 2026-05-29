@@ -8,34 +8,23 @@ const mongoose = require("mongoose");
 const bcrypt = require("bcrypt");
 
 const app = express();
-
 app.use(cors({ origin: "*" }));
 
 const server = http.createServer(app);
 
 const io = new Server(server, {
-  cors: {
-    origin: "*",
-    methods: ["GET", "POST"]
-  },
+  cors: { origin: "*" },
   transports: ["websocket", "polling"]
 });
 
-/* =========================
-   MONGODB CONNECT
-========================= */
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log("MongoDB connected"))
   .catch(err => console.log(err));
 
-/* =========================
-   MODELS (CLEAN)
-========================= */
 const User = mongoose.model("User", {
   username: { type: String, unique: true, required: true },
   password: String,
-  status: String,
-  avatar: String
+  status: String
 });
 
 const Message = mongoose.model("Message", {
@@ -45,15 +34,14 @@ const Message = mongoose.model("Message", {
   time: Number
 });
 
-/* =========================
-   SOCKET LOGIC
-========================= */
 io.on("connection", (socket) => {
 
   console.log("user connected");
 
-  /* LOGIN / REGISTER */
-  socket.on("register", async ({ user, pass }) => {
+  /* =========================
+     REGISTER / LOGIN
+  ========================= */
+  socket.on("register", async ({ user, pass, mode }) => {
 
     if (!user || !pass) return;
 
@@ -61,21 +49,33 @@ io.on("connection", (socket) => {
 
       let dbUser = await User.findOne({ username: user });
 
-      if (!dbUser) {
+      /* REGISTER MODE */
+      if (mode === "register") {
+
+        if (dbUser) {
+          socket.emit("login_fail", "User already exists");
+          return;
+        }
+
         const hash = await bcrypt.hash(pass, 10);
 
         dbUser = await User.create({
           username: user,
           password: hash,
-          status: "online",
-          avatar: ""
+          status: "online"
         });
+      }
+
+      /* LOGIN CHECK */
+      if (!dbUser) {
+        socket.emit("login_fail", "User not found");
+        return;
       }
 
       const ok = await bcrypt.compare(pass, dbUser.password);
 
       if (!ok) {
-        socket.emit("login_fail");
+        socket.emit("login_fail", "Wrong password");
         return;
       }
 
@@ -84,14 +84,22 @@ io.on("connection", (socket) => {
       dbUser.status = "online";
       await dbUser.save();
 
-      socket.emit("login_success", dbUser);
+      socket.emit("login_success", {
+        username: dbUser.username
+      });
 
       const users = await User.find({});
       io.emit("users", users);
 
     } catch (err) {
-      console.log("AUTH ERROR:", err);
+      console.log(err);
+      socket.emit("login_fail", "Server error");
     }
+  });
+
+  /* USERS */
+  socket.on("get_users", async () => {
+    socket.emit("users", await User.find({}));
   });
 
   /* CHAT */
@@ -132,8 +140,7 @@ io.on("connection", (socket) => {
       { status: "offline" }
     );
 
-    const users = await User.find({});
-    io.emit("users", users);
+    io.emit("users", await User.find({}));
   });
 
 });
@@ -141,5 +148,5 @@ io.on("connection", (socket) => {
 const PORT = process.env.PORT || 3000;
 
 server.listen(PORT, "0.0.0.0", () => {
-  console.log("BUZZI STABLE CORE V1 RUNNING");
+  console.log("BUZZI FULL CORE LOCK RUNNING");
 });
