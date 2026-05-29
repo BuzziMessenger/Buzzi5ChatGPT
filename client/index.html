@@ -1,35 +1,103 @@
 <!DOCTYPE html>
-<html lang="nl">
+<html>
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Buzzi Messenger</title>
-
-<link rel="stylesheet" href="style.css">
+<title>Buzzi V20</title>
 <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+
+<style>
+body{margin:0;font-family:Segoe UI;display:flex;height:100vh}
+#users{width:250px;background:#f4f6ff;overflow:auto}
+#chat{flex:1;display:flex;flex-direction:column}
+.msg{padding:8px;margin:5px;border-radius:10px;max-width:70%}
+.me{background:#c8f7c5;margin-left:auto}
+#msgs{flex:1;overflow:auto;padding:10px}
+#input{display:flex}
+#input input{flex:1}
+.buzz{animation:shake .1s infinite;background:#fff3a0}
+@keyframes shake{0%{transform:translate(2px)}50%{transform:translate(-2px)}}
+.wink{position:fixed;inset:0;display:flex;justify-content:center;align-items:center;font-size:80px}
+</style>
+
 </head>
 
 <body>
 
-<div id="sidebar"></div>
+<div id="users"></div>
 
 <div id="chat">
-  <div id="header">
-    <span id="title">Buzzi</span>
-    <div>
-      <button onclick="buzz()">📳</button>
-      <button onclick="wink('😂')">😂</button>
-    </div>
-  </div>
 
-  <div id="messages"></div>
+<div id="msgs"></div>
 
-  <div id="input">
-    <input id="msg">
-    <button onclick="send()">Send</button>
-  </div>
+<div id="input">
+<input id="msg">
+<button onclick="send()">Send</button>
+<button onclick="buzz()">📳</button>
+<button onclick="wink('😂')">😂</button>
 </div>
 
-<script src="./app.js"></script>
+</div>
+
+<script>
+
+const socket = io("https://jouw-backend.onrender.com");
+
+let me = prompt("user");
+let active;
+
+socket.emit("auth",{user:me});
+
+socket.on("users", list=>{
+  users.innerHTML="";
+  list.forEach(u=>{
+    if(u===me) return;
+    let d=document.createElement("div");
+    d.innerText=u;
+    d.onclick=()=>active=u;
+    users.appendChild(d);
+  });
+});
+
+socket.on("msg", m=>{
+  let d=document.createElement("div");
+  d.className="msg "+(m.from===me?"me":"");
+  d.innerText=m.text;
+  msgs.appendChild(d);
+  msgs.scrollTop=msgs.scrollHeight;
+});
+
+function send(){
+  socket.emit("msg",{from:me,to:active,text:msg.value});
+  msg.value="";
+}
+
+function buzz(){
+  socket.emit("buzz",{from:me,to:active});
+  document.body.classList.add("buzz");
+  setTimeout(()=>document.body.classList.remove("buzz"),300);
+}
+
+function wink(e){
+  socket.emit("wink",{to:active,emoji:e});
+  let d=document.createElement("div");
+  d.className="wink";
+  d.innerText=e;
+  document.body.appendChild(d);
+  setTimeout(()=>d.remove(),800);
+}
+
+socket.on("buzz",()=>buzz());
+socket.on("wink",e=>wink(e));
+
+socket.on("typing",f=>{
+  console.log(f+" typing...");
+});
+
+msg.addEventListener("input",()=>{
+  socket.emit("typing",{to:active,from:me});
+});
+
+</script>
+
 </body>
 </html>
