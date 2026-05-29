@@ -3,29 +3,75 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Buzzi v8</title>
+<title>Buzzi Messenger v5</title>
 
 <style>
 
 body {
   margin: 0;
   font-family: Tahoma;
+  background: #d7e7ff;
   height: 100vh;
   overflow: hidden;
-  background: #d7e7ff;
 }
 
-#login {
+/* AUTH WRAPPER */
+#auth {
   position: fixed;
   inset: 0;
-  background: #1f3f73;
+  background: linear-gradient(#1f3f73,#2b579a);
   display: flex;
   justify-content: center;
   align-items: center;
-  color: white;
-  flex-direction: column;
 }
 
+/* BOX */
+.card {
+  width: 320px;
+  background: white;
+  border-radius: 10px;
+  padding: 20px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+}
+
+/* INPUTS */
+input {
+  width: 100%;
+  padding: 10px;
+  margin: 6px 0;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+}
+
+/* BUTTON */
+button {
+  width: 100%;
+  padding: 10px;
+  background: #2b579a;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+/* SWITCH */
+.switch {
+  text-align: center;
+  margin-top: 10px;
+  font-size: 12px;
+  cursor: pointer;
+  color: #2b579a;
+}
+
+/* ERROR */
+.error {
+  color: red;
+  font-size: 12px;
+  margin-top: 5px;
+  min-height: 16px;
+}
+
+/* APP */
 .app {
   display: flex;
   height: 100vh;
@@ -35,7 +81,6 @@ body {
   width: 260px;
   background: #f2f7ff;
   border-right: 1px solid #2b579a;
-  overflow-y: auto;
 }
 
 .header {
@@ -49,7 +94,6 @@ body {
   margin: 5px;
   background: white;
   cursor: pointer;
-  border-radius: 6px;
 }
 
 .chat {
@@ -62,14 +106,13 @@ body {
   flex: 1;
   overflow-y: auto;
   padding: 10px;
-  background: #eef5ff;
 }
 
 .msg {
   padding: 6px;
-  margin: 5px;
+  margin: 4px;
   background: white;
-  border-radius: 6px;
+  border-radius: 5px;
 }
 
 .me { background: #cfe6ff; margin-left: auto; }
@@ -78,16 +121,13 @@ body {
   display: flex;
 }
 
-input {
+input.msgInput {
   flex: 1;
   padding: 10px;
 }
 
-button {
-  background: #2b579a;
-  color: white;
-  border: none;
-  padding: 10px;
+button.send {
+  width: 100px;
 }
 
 </style>
@@ -95,14 +135,28 @@ button {
 
 <body>
 
-<div id="login">
-  <h2>Buzzi v8</h2>
-  <input id="user" placeholder="user">
-  <input id="pass" type="password" placeholder="pass">
-  <button onclick="login()">Login</button>
+<!-- AUTH -->
+<div id="auth">
+  <div class="card">
+
+    <h3 id="title">Login</h3>
+
+    <input id="user" placeholder="Username">
+    <input id="pass" type="password" placeholder="Password">
+
+    <button onclick="auth()">Login</button>
+
+    <div class="error" id="error"></div>
+
+    <div class="switch" onclick="toggleMode()">
+      Nog geen account? Register hier
+    </div>
+
+  </div>
 </div>
 
-<div class="app">
+<!-- APP -->
+<div class="app" style="display:none;" id="app">
 
   <div class="sidebar">
     <div class="header">Contacten</div>
@@ -110,12 +164,12 @@ button {
   </div>
 
   <div class="chat">
-    <div class="header" id="title">Select chat</div>
+    <div class="header" id="chatTitle">Select chat</div>
     <div class="box" id="box"></div>
 
     <div class="input">
-      <input id="msg">
-      <button onclick="send()">Send</button>
+      <input class="msgInput" id="msg">
+      <button class="send" onclick="send()">Send</button>
     </div>
   </div>
 
@@ -129,65 +183,96 @@ const socket = io("https://buzzimessenger.onrender.com");
 
 let me=null;
 let active=null;
-let chats={};
+let mode="login"; // login | register
 
-/* login */
-function login(){
-  socket.emit("register",{
-    user:document.getElementById("user").value,
-    pass:document.getElementById("pass").value
-  });
+/* SWITCH LOGIN / REGISTER */
+function toggleMode(){
+  const t=document.getElementById("title");
+  const btn=document.querySelector("#auth button");
+  const sw=document.querySelector(".switch");
+
+  if(mode==="login"){
+    mode="register";
+    t.innerText="Register";
+    btn.innerText="Create account";
+    sw.innerText="Al account? Login hier";
+  } else {
+    mode="login";
+    t.innerText="Login";
+    btn.innerText="Login";
+    sw.innerText="Nog geen account? Register hier";
+  }
+
+  document.getElementById("error").innerText="";
 }
 
+/* AUTH ACTION */
+function auth(){
+  const user=document.getElementById("user").value;
+  const pass=document.getElementById("pass").value;
+
+  if(!user || !pass){
+    document.getElementById("error").innerText="Vul alles in";
+    return;
+  }
+
+  socket.emit("register", { user, pass });
+}
+
+/* LOGIN SUCCESS */
 socket.on("login_success",(u)=>{
   me=u.name;
-  document.getElementById("login").style.display="none";
+
+  document.getElementById("auth").style.display="none";
+  document.getElementById("app").style.display="flex";
 });
 
-/* users */
+/* LOGIN FAIL */
+socket.on("login_fail",()=>{
+  document.getElementById("error").innerText="Login mislukt (check wachtwoord)";
+});
+
+/* USERS */
 socket.on("users",(users)=>{
+
   const box=document.getElementById("users");
   box.innerHTML="";
 
-  Object.keys(users).forEach(name=>{
-    if(name===me)return;
+  users.forEach(u=>{
+    if(u.name===me) return;
 
     const d=document.createElement("div");
     d.className="user";
-    d.innerText=name;
+    d.innerText=u.name;
+
     d.onclick=()=>{
-      active=name;
-      socket.emit("get_history",{userA:me,userB:name});
-      document.getElementById("title").innerText="Chat met "+name;
+      active=u.name;
+      socket.emit("get_history",{userA:me,userB:u.name});
+      document.getElementById("chatTitle").innerText="Chat met "+u.name;
     };
 
     box.appendChild(d);
   });
+
 });
 
-/* history */
+/* HISTORY */
 socket.on("history",(msgs)=>{
-  if(!active)return;
-
-  chats[active]=msgs;
-  render();
+  render(msgs);
 });
 
-/* chat */
+/* CHAT */
 socket.on("chat_message",(msg)=>{
-  const other=msg.from===me?msg.to:msg.from;
-
-  if(!chats[other])chats[other]=[];
-  chats[other].push(msg);
-
-  if(active===other)render();
+  if(active){
+    socket.emit("get_history",{userA:me,userB:active});
+  }
 });
 
-/* send */
+/* SEND */
 function send(){
   const i=document.getElementById("msg");
 
-  if(!i.value||!active)return;
+  if(!i.value || !active) return;
 
   socket.emit("chat_message",{
     from:me,
@@ -198,12 +283,12 @@ function send(){
   i.value="";
 }
 
-/* render */
-function render(){
+/* RENDER */
+function render(msgs){
   const box=document.getElementById("box");
   box.innerHTML="";
 
-  (chats[active]||[]).forEach(m=>{
+  msgs.forEach(m=>{
     const d=document.createElement("div");
     d.className="msg "+(m.from===me?"me":"");
     d.innerText=m.from+": "+m.text;
