@@ -36,13 +36,6 @@ io.on("connection", (socket) => {
     io.emit("users", users);
   });
 
-  socket.on("set_status_text", ({ user, text }) => {
-    if (users[user]) {
-      users[user].text = text;
-      io.emit("users", users);
-    }
-  });
-
   socket.on("chat_message", (msg) => {
     const k = key(msg.from, msg.to);
 
@@ -68,6 +61,7 @@ io.on("connection", (socket) => {
     socket.emit("history", messages[key(userA, userB)] || []);
   });
 
+  /* 🟢 V2: typing */
   socket.on("typing", ({ from, to }) => {
     const target = users[to];
     if (target) {
@@ -87,4 +81,4 @@ io.on("connection", (socket) => {
   });
 });
 
-server.listen(3000, () => console.log("MSN FIXED RUNNING"));
+server.listen(3000, () => console.log("MSN V2 RUNNING"));
