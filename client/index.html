@@ -3,28 +3,22 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Buzzi Messenger UI Pro v1</title>
+<title>Buzzi v1.1</title>
 
 <style>
 
-* {
-  box-sizing: border-box;
-}
-
 body {
   margin:0;
-  font-family:Segoe UI, Tahoma;
+  font-family:Segoe UI;
   background:#d7e7ff;
   height:100vh;
 }
 
-/* =========================
-   AUTH
-========================= */
+/* AUTH */
 #auth {
   position:fixed;
   inset:0;
-  background:linear-gradient(135deg,#1f3f73,#2b579a);
+  background:#1f3f73;
   display:flex;
   justify-content:center;
   align-items:center;
@@ -33,160 +27,87 @@ body {
 .card {
   width:340px;
   background:white;
-  padding:25px;
-  border-radius:12px;
-  box-shadow:0 10px 30px rgba(0,0,0,0.2);
-}
-
-.card h3 {
-  margin-top:0;
+  padding:20px;
+  border-radius:10px;
 }
 
 input {
   width:100%;
-  padding:12px;
+  padding:10px;
   margin:6px 0;
-  border:1px solid #ccc;
-  border-radius:6px;
 }
 
 button {
   width:100%;
-  padding:12px;
+  padding:10px;
   background:#2b579a;
   color:white;
   border:none;
-  border-radius:6px;
-  cursor:pointer;
-}
-
-.error {
-  color:red;
-  font-size:12px;
-  min-height:16px;
 }
 
 .switch {
   text-align:center;
-  margin-top:10px;
   font-size:12px;
+  margin-top:10px;
   cursor:pointer;
   color:#2b579a;
 }
 
-/* =========================
-   APP LAYOUT
-========================= */
+/* APP */
 .app {
   display:none;
   height:100vh;
   display:flex;
 }
 
-/* SIDEBAR */
 .sidebar {
   width:260px;
   background:#f5f8ff;
-  border-right:1px solid #d0d8e8;
-  display:flex;
-  flex-direction:column;
 }
 
-.sidebar-header {
-  padding:12px;
+.header {
   background:#2b579a;
   color:white;
-  font-weight:bold;
+  padding:10px;
 }
 
 .user {
-  padding:12px;
-  margin:6px;
+  padding:10px;
+  margin:5px;
   background:white;
-  border-radius:8px;
   cursor:pointer;
-  transition:0.2s;
 }
 
-.user:hover {
-  background:#e8f0ff;
-}
-
-/* CHAT */
 .chat {
   flex:1;
   display:flex;
   flex-direction:column;
-  background:#eaf2ff;
 }
 
-/* CHAT HEADER */
-.chat-header {
-  padding:12px;
-  background:#2b579a;
-  color:white;
-  font-weight:bold;
-}
-
-/* MESSAGES */
 .box {
   flex:1;
-  padding:15px;
+  padding:10px;
   overflow-y:auto;
-  display:flex;
-  flex-direction:column;
-  gap:8px;
 }
 
 .msg {
-  max-width:60%;
-  padding:10px;
-  border-radius:10px;
   background:white;
-  align-self:flex-start;
-  box-shadow:0 2px 6px rgba(0,0,0,0.1);
+  padding:8px;
+  margin:5px;
 }
 
 .me {
   background:#cfe6ff;
-  align-self:flex-end;
+  margin-left:auto;
 }
 
-/* INPUT */
-.input-bar {
+.input {
   display:flex;
-  padding:10px;
-  background:white;
-  border-top:1px solid #ccc;
 }
 
-.input-bar input {
+.input input {
   flex:1;
-  margin:0;
-  border-radius:20px;
-}
-
-.input-bar button {
-  width:90px;
-  margin-left:10px;
-  border-radius:20px;
-}
-
-/* MOBILE FIX */
-@media (max-width: 768px) {
-
-  .sidebar {
-    width:100px;
-  }
-
-  .user {
-    font-size:12px;
-    padding:8px;
-  }
-
-  .msg {
-    max-width:80%;
-  }
+  padding:10px;
 }
 
 </style>
@@ -205,8 +126,6 @@ button {
 
     <button onclick="auth()">Login</button>
 
-    <div class="error" id="error"></div>
-
     <div class="switch" onclick="toggleMode()">
       Nog geen account? Register hier
     </div>
@@ -218,20 +137,16 @@ button {
 <div class="app" id="app">
 
   <div class="sidebar">
-    <div class="sidebar-header">Contacten</div>
+    <div class="header">Contacten</div>
     <div id="users"></div>
   </div>
 
   <div class="chat">
-
-    <div class="chat-header" id="chatTitle">
-      Select chat
-    </div>
-
+    <div class="header" id="chatTitle">Select chat</div>
     <div class="box" id="box"></div>
 
-    <div class="input-bar">
-      <input id="msg" placeholder="Type een bericht...">
+    <div class="input">
+      <input id="msg">
       <button onclick="send()">Send</button>
     </div>
 
@@ -243,62 +158,32 @@ button {
 
 <script>
 
-const socket = io("https://buzzimessenger.onrender.com", {
-  transports: ["websocket", "polling"]
-});
+const socket = io("https://buzzimessenger.onrender.com");
 
 let me = null;
 let active = null;
 let mode = "login";
 
-/* =========================
-   TOGGLE LOGIN / REGISTER
-========================= */
-function toggleMode() {
+/* TOGGLE */
+function toggleMode(){
 
   const title = document.getElementById("title");
-  const btn = document.querySelector("button");
-  const sw = document.querySelector(".switch");
-  const err = document.getElementById("error");
 
-  err.innerText = "";
+  mode = mode === "login" ? "register" : "login";
 
-  if (mode === "login") {
-    mode = "register";
-    title.innerText = "Register";
-    btn.innerText = "Create account";
-    sw.innerText = "Al account? Login hier";
-  } else {
-    mode = "login";
-    title.innerText = "Login";
-    btn.innerText = "Login";
-    sw.innerText = "Nog geen account? Register hier";
-  }
+  title.innerText = mode === "login" ? "Login" : "Register";
 }
 
-/* =========================
-   AUTH
-========================= */
+/* AUTH */
 function auth(){
 
   const user = document.getElementById("user").value;
   const pass = document.getElementById("pass").value;
 
-  if(!user || !pass){
-    document.getElementById("error").innerText = "Vul alles in";
-    return;
-  }
-
-  socket.emit("register", {
-    user,
-    pass,
-    mode
-  });
+  socket.emit("register", { user, pass, mode });
 }
 
-/* =========================
-   LOGIN SUCCESS
-========================= */
+/* LOGIN SUCCESS */
 socket.on("login_success", (u) => {
 
   me = u.username;
@@ -307,14 +192,7 @@ socket.on("login_success", (u) => {
   document.getElementById("app").style.display = "flex";
 });
 
-/* FAIL */
-socket.on("login_fail", (msg) => {
-  document.getElementById("error").innerText = msg;
-});
-
-/* =========================
-   USERS
-========================= */
+/* USERS */
 socket.on("users", (users) => {
 
   const box = document.getElementById("users");
@@ -322,7 +200,9 @@ socket.on("users", (users) => {
 
   users.forEach(u => {
 
-    if(u.username === me) return;
+    /* 🔴 FIX: NO UNDEFINED USERS */
+    if (!u || !u.username) return;
+    if (u.username === me) return;
 
     const d = document.createElement("div");
     d.className = "user";
@@ -336,26 +216,18 @@ socket.on("users", (users) => {
 
     box.appendChild(d);
   });
-
 });
 
-/* =========================
-   HISTORY
-========================= */
+/* HISTORY */
 socket.on("history", render);
 
-/* =========================
-   CHAT UPDATE
-========================= */
 socket.on("chat_message", () => {
   if(active){
     socket.emit("get_history", { userA: me, userB: active });
   }
 });
 
-/* =========================
-   SEND
-========================= */
+/* SEND */
 function send(){
 
   const i = document.getElementById("msg");
@@ -370,9 +242,7 @@ function send(){
   i.value = "";
 }
 
-/* =========================
-   RENDER CHAT
-========================= */
+/* RENDER */
 function render(msgs){
 
   const box = document.getElementById("box");
@@ -387,7 +257,6 @@ function render(msgs){
     box.appendChild(d);
   });
 
-  box.scrollTop = box.scrollHeight;
 }
 
 </script>

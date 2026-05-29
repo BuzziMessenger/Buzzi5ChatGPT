@@ -22,7 +22,7 @@ mongoose.connect(process.env.MONGO_URI)
   .catch(err => console.log(err));
 
 const User = mongoose.model("User", {
-  username: { type: String, unique: true, required: true },
+  username: { type: String, required: true, unique: true },
   password: String,
   status: String
 });
@@ -38,9 +38,6 @@ io.on("connection", (socket) => {
 
   console.log("user connected");
 
-  /* =========================
-     REGISTER / LOGIN
-  ========================= */
   socket.on("register", async ({ user, pass, mode }) => {
 
     if (!user || !pass) return;
@@ -49,7 +46,6 @@ io.on("connection", (socket) => {
 
       let dbUser = await User.findOne({ username: user });
 
-      /* REGISTER MODE */
       if (mode === "register") {
 
         if (dbUser) {
@@ -66,7 +62,6 @@ io.on("connection", (socket) => {
         });
       }
 
-      /* LOGIN CHECK */
       if (!dbUser) {
         socket.emit("login_fail", "User not found");
         return;
@@ -84,12 +79,9 @@ io.on("connection", (socket) => {
       dbUser.status = "online";
       await dbUser.save();
 
-      socket.emit("login_success", {
-        username: dbUser.username
-      });
+      socket.emit("login_success", { username: dbUser.username });
 
-      const users = await User.find({});
-      io.emit("users", users);
+      emitUsers(io);
 
     } catch (err) {
       console.log(err);
@@ -97,12 +89,18 @@ io.on("connection", (socket) => {
     }
   });
 
-  /* USERS */
-  socket.on("get_users", async () => {
-    socket.emit("users", await User.find({}));
+  socket.on("get_history", async ({ userA, userB }) => {
+
+    const msgs = await Message.find({
+      $or: [
+        { from: userA, to: userB },
+        { from: userB, to: userA }
+      ]
+    }).sort({ time: 1 });
+
+    socket.emit("history", msgs);
   });
 
-  /* CHAT */
   socket.on("chat_message", async (msg) => {
 
     if (!msg.from || !msg.to || !msg.text) return;
@@ -117,20 +115,6 @@ io.on("connection", (socket) => {
     io.emit("chat_message", saved);
   });
 
-  /* HISTORY */
-  socket.on("get_history", async ({ userA, userB }) => {
-
-    const msgs = await Message.find({
-      $or: [
-        { from: userA, to: userB },
-        { from: userB, to: userA }
-      ]
-    }).sort({ time: 1 });
-
-    socket.emit("history", msgs);
-  });
-
-  /* DISCONNECT */
   socket.on("disconnect", async () => {
 
     if (!socket.username) return;
@@ -140,13 +124,25 @@ io.on("connection", (socket) => {
       { status: "offline" }
     );
 
-    io.emit("users", await User.find({}));
+    emitUsers(io);
   });
 
 });
 
+/* =========================
+   SAFE USERS EMIT (FIX)
+========================= */
+async function emitUsers(io) {
+
+  const users = await User.find({
+    username: { $ne: null }   // 🔴 FIX: geen null users
+  });
+
+  io.emit("users", users);
+}
+
 const PORT = process.env.PORT || 3000;
 
 server.listen(PORT, "0.0.0.0", () => {
-  console.log("BUZZI FULL CORE LOCK RUNNING");
+  console.log("BUZZI CORE LOCK v1.1 RUNNING");
 });
