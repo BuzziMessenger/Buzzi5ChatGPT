@@ -3,25 +3,26 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Buzzi Messenger Pro</title>
+
+<title>Buzzi Messenger</title>
 
 <style>
 
-/* =========================
-   BASE FIX (BELANGRIJK)
-========================= */
+/* =======================
+   BASE
+======================= */
 
 html, body {
-  height: 100%;
   margin: 0;
+  height: 100%;
   overflow: hidden;
   font-family: Segoe UI;
   background: #e7f0ff;
 }
 
-/* =========================
+/* =======================
    SPLASH
-========================= */
+======================= */
 
 #splash {
   position: fixed;
@@ -34,9 +35,9 @@ html, body {
   align-items: center;
 }
 
-/* =========================
+/* =======================
    LOGIN
-========================= */
+======================= */
 
 #auth {
   position: fixed;
@@ -54,19 +55,18 @@ html, body {
   width: 300px;
 }
 
-/* =========================
-   APP STRUCTUUR (FIXED)
-========================= */
+/* =======================
+   APP STRUCTUUR (STABIEL)
+======================= */
 
 #app {
   display: none;
   height: 100dvh;
-  width: 100%;
   display: flex;
   overflow: hidden;
 }
 
-/* USERS SIDEBAR */
+/* CONTACTEN */
 .sidebar {
   width: 260px;
   background: #f4f7ff;
@@ -81,7 +81,7 @@ html, body {
   cursor: pointer;
 }
 
-/* CHAT AREA */
+/* CHAT */
 .chat {
   flex: 1;
   display: flex;
@@ -98,7 +98,7 @@ html, body {
   justify-content: space-between;
 }
 
-/* MESSAGES (ENIGE SCROLL AREA) */
+/* MESSAGES */
 .messages {
   flex: 1;
   overflow-y: auto;
@@ -109,12 +109,11 @@ html, body {
   min-height: 0;
 }
 
-/* BUBBLES */
 .msg {
   padding: 10px;
   border-radius: 12px;
   max-width: 65%;
-  word-wrap: break-word;
+  word-break: break-word;
 }
 
 .me {
@@ -126,7 +125,7 @@ html, body {
   background: white;
 }
 
-/* INPUT FIXED ONDERIN */
+/* INPUT */
 .input {
   display: flex;
   padding: 10px;
@@ -136,13 +135,13 @@ html, body {
 
 .input input {
   flex: 1;
-  padding: 10px;
   font-size: 16px;
+  padding: 10px;
 }
 
-/* =========================
+/* =======================
    SETTINGS
-========================= */
+======================= */
 
 #settings {
   display: none;
@@ -170,15 +169,14 @@ html, body {
   border: 2px solid #2b579a;
 }
 
-/* =========================
-   MOBILE FIX (STABIEL)
-========================= */
+/* =======================
+   MOBILE (STABIEL)
+======================= */
 
 @media (max-width: 768px) {
 
   #app {
     flex-direction: column;
-    height: 100dvh;
   }
 
   .sidebar {
@@ -197,7 +195,6 @@ html, body {
   .messages {
     padding-bottom: 5px;
   }
-
 }
 
 </style>
@@ -238,7 +235,7 @@ html, body {
   <div class="chat">
 
     <div class="header">
-      <div>Chat</div>
+      <div id="activeChat">Chat</div>
       <button onclick="toggleSettings()">⚙</button>
     </div>
 
@@ -282,11 +279,11 @@ const splashBox = document.getElementById("splash");
 
 const usersBox = document.getElementById("users");
 const messagesBox = document.getElementById("messages");
+const activeChatLabel = document.getElementById("activeChat");
 
 let me = null;
 let active = null;
-let status = "online";
-let avatar = null;
+let chatCache = {}; // 🧠 STABIELE CHAT STATE
 
 /* SPLASH */
 setTimeout(() => {
@@ -319,11 +316,11 @@ socket.on("users",(users)=>{
 
     const d=document.createElement("div");
     d.className="user";
+
     d.innerHTML = `${u.username}<br><small>${u.status}</small>`;
 
     d.onclick=()=>{
-      active=u.username;
-      socket.emit("history",{a:me,b:active});
+      setActiveChat(u.username);
     };
 
     usersBox.appendChild(d);
@@ -331,30 +328,62 @@ socket.on("users",(users)=>{
 
 });
 
+/* =========================
+   CHAT STATE FIX (BELANGRIJK)
+========================= */
+
+function setActiveChat(user){
+
+  active = user;
+  activeChatLabel.innerText = "Chat met " + user;
+
+  messagesBox.innerHTML = "";
+
+  if(chatCache[user]){
+    chatCache[user].forEach(renderMessage);
+  }
+
+  socket.emit("history",{a:me,b:active});
+}
+
 /* HISTORY */
 socket.on("history",(msgs)=>{
 
-  messagesBox.innerHTML="";
+  if(!active) return;
 
-  msgs.forEach(m=>{
-    const d=document.createElement("div");
-    d.className="msg "+(m.from===me?"me":"other");
-    d.innerText=m.text;
-    messagesBox.appendChild(d);
-  });
+  chatCache[active] = msgs;
+
+  messagesBox.innerHTML = "";
+
+  msgs.forEach(renderMessage);
 
 });
 
-/* NEW MESSAGE */
+/* LIVE MESSAGE */
 socket.on("msg",(m)=>{
+
+  const partner = (m.from === me) ? m.to : m.from;
+
+  if(!chatCache[partner]) chatCache[partner] = [];
+
+  chatCache[partner].push(m);
+
+  if(partner === active){
+    renderMessage(m);
+  }
+
+});
+
+/* RENDER */
+function renderMessage(m){
 
   const d=document.createElement("div");
   d.className="msg "+(m.from===me?"me":"other");
   d.innerText=m.text;
 
   messagesBox.appendChild(d);
-
-});
+  messagesBox.scrollTop = messagesBox.scrollHeight;
+}
 
 /* SEND */
 function send(){
@@ -378,14 +407,12 @@ function toggleSettings(){
 }
 
 function setStatus(s){
-  status=s;
   socket.emit("status_update",{user:me,status:s});
 }
 
 function setAvatar(el){
   document.querySelectorAll(".avatar").forEach(a=>a.classList.remove("selected"));
   el.classList.add("selected");
-  avatar = el.src;
 }
 
 </script>
