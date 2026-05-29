@@ -22,34 +22,50 @@ const Message = mongoose.model("Message", {
   from: String,
   to: String,
   text: String,
-  time: Number,
-  reaction: { type: String, default: "" }
+  time: Number
 });
 
 io.on("connection", (socket) => {
 
   socket.on("register", async ({ user, pass, mode }) => {
 
-    if (!user || !pass) return;
-
-    if (mode === "register") {
-      const exists = await User.findOne({ username: user });
-      if (exists) return socket.emit("login_error");
-
-      await User.create({ username: user, password: pass });
+    if (!user || !pass) {
+      socket.emit("login_error", "missing");
+      return;
     }
 
-    const found = await User.findOne({ username: user, password: pass });
-    if (!found) return socket.emit("login_error");
+    try {
 
-    socket.username = user;
-    socket.join(user);
+      if (mode === "register") {
+        const exists = await User.findOne({ username: user });
+        if (exists) {
+          socket.emit("login_error", "exists");
+          return;
+        }
 
-    await User.updateOne({ username: user }, { status: "online" });
+        await User.create({ username: user, password: pass });
+      }
 
-    socket.emit("login_success", { username: user });
+      const found = await User.findOne({ username: user, password: pass });
 
-    sendUsers();
+      if (!found) {
+        socket.emit("login_error", "wrong");
+        return;
+      }
+
+      socket.username = user;
+      socket.join(user);
+
+      await User.updateOne({ username: user }, { status: "online" });
+
+      socket.emit("login_success", { username: user });
+
+      sendUsers();
+
+    } catch (e) {
+      console.log(e);
+      socket.emit("login_error", "server");
+    }
   });
 
   socket.on("chat_message", async (data) => {
@@ -71,23 +87,12 @@ io.on("connection", (socket) => {
     socket.emit("history", msgs);
   });
 
-  socket.on("add_reaction", async ({ id, reaction }) => {
-    await Message.updateOne({ _id: id }, { reaction });
-
-    const msg = await Message.findById(id);
-
-    io.to(msg.to).emit("reaction_update", msg);
-    io.to(msg.from).emit("reaction_update", msg);
-  });
-
-  socket.on("set_status", async ({ user, status }) => {
-    await User.updateOne({ username: user }, { status });
-    sendUsers();
-  });
-
   socket.on("disconnect", async () => {
     if (socket.username) {
-      await User.updateOne({ username: socket.username }, { status: "offline" });
+      await User.updateOne(
+        { username: socket.username },
+        { status: "offline" }
+      );
       sendUsers();
     }
   });
@@ -103,4 +108,6 @@ io.on("connection", (socket) => {
 
 });
 
-server.listen(10000, () => console.log("BUZZI CLEAN FINAL RUNNING"));
+server.listen(10000, () => {
+  console.log("BUZZI STABLE RUNNING");
+});
