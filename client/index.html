@@ -17,10 +17,11 @@ body{margin:0;font-family:Segoe UI;background:#d7e7ff;height:100vh;overflow:hidd
   color:white;
 }
 
+#auth,#app{display:none}
+
 #auth{
   position:fixed;inset:0;
   background:#1f3f73;
-  display:flex;
   justify-content:center;
   align-items:center;
 }
@@ -28,28 +29,26 @@ body{margin:0;font-family:Segoe UI;background:#d7e7ff;height:100vh;overflow:hidd
 .card{
   background:white;
   padding:20px;
-  border-radius:12px;
-  width:300px;
+  border-radius:10px;
+  width:280px;
 }
 
-.app{display:none;height:100vh;display:flex}
+.app{
+  height:100vh;
+  display:flex;
+}
 
 .sidebar{width:250px;background:#f5f8ff}
 
 .header{background:#2b579a;color:white;padding:10px}
 
-.user{padding:10px;margin:5px;background:white;cursor:pointer}
+.user{padding:10px;background:white;margin:5px;cursor:pointer}
 
 .chat{flex:1;display:flex;flex-direction:column}
 
 .box{flex:1;overflow:auto;padding:10px;display:flex;flex-direction:column;gap:10px}
 
-.msg{
-  padding:10px;
-  border-radius:15px;
-  max-width:60%;
-}
-
+.msg{padding:10px;border-radius:10px;max-width:60%}
 .me{background:#cfe6ff;align-self:flex-end}
 .other{background:white}
 
@@ -67,30 +66,30 @@ body{margin:0;font-family:Segoe UI;background:#d7e7ff;height:100vh;overflow:hidd
 
 <div id="auth">
   <div class="card">
-    <input id="user" placeholder="username">
-    <input id="pass" type="password" placeholder="password">
+    <input id="user" placeholder="username"><br><br>
+    <input id="pass" type="password" placeholder="password"><br><br>
 
     <select id="mode">
       <option value="login">login</option>
       <option value="register">register</option>
-    </select>
+    </select><br><br>
 
-    <button onclick="auth()">Start</button>
+    <button onclick="login()">Start</button>
   </div>
 </div>
 
-<div class="app" id="app">
+<div id="app" class="app">
 
   <div class="sidebar">
-    <div class="header">Contacten</div>
+    <div class="header">Users</div>
     <div id="users"></div>
   </div>
 
   <div class="chat">
 
-    <div class="header" id="chatTitle">Chat</div>
+    <div class="header">Chat</div>
 
-    <div class="box" id="box"></div>
+    <div id="box" class="box"></div>
 
     <div class="input">
       <input id="msg">
@@ -107,71 +106,77 @@ body{margin:0;font-family:Segoe UI;background:#d7e7ff;height:100vh;overflow:hidd
 
 const socket = io("https://buzzimessenger.onrender.com");
 
-let me=null;
-let active=null;
+let me = null;
+let active = null;
 
-setTimeout(()=>{
-  splash.style.display="none";
-  auth.style.display="flex";
-},1500);
+window.onload = () => {
 
-function auth(){
-  socket.emit("register",{
-    user:user.value,
-    pass:pass.value,
-    mode:mode.value
+  setTimeout(() => {
+    document.getElementById("splash").style.display = "none";
+    document.getElementById("auth").style.display = "flex";
+  }, 1200);
+
+};
+
+function login() {
+  socket.emit("register", {
+    user: document.getElementById("user").value,
+    pass: document.getElementById("pass").value,
+    mode: document.getElementById("mode").value
   });
 }
 
-socket.on("login_success",(u)=>{
-  me=u.username;
-  auth.style.display="none";
-  app.style.display="flex";
+socket.on("login_success", (u) => {
+  me = u.username;
+  document.getElementById("auth").style.display = "none";
+  document.getElementById("app").style.display = "flex";
 });
 
-socket.on("login_error",(e)=>{
-  alert("Login fout: "+e);
+socket.on("login_error", (e) => {
+  alert("Login fout: " + e);
 });
 
-socket.on("users",(users)=>{
-  usersBox.innerHTML="";
+socket.on("users", (users) => {
+  const box = document.getElementById("users");
+  box.innerHTML = "";
 
-  users.forEach(u=>{
-    if(u.username===me) return;
+  users.forEach(u => {
+    if (u.username === me) return;
 
-    const d=document.createElement("div");
-    d.className="user";
-    d.innerText=u.username;
+    const d = document.createElement("div");
+    d.className = "user";
+    d.innerText = u.username;
 
-    d.onclick=()=>{
-      active=u.username;
-      socket.emit("get_history",{userA:me,userB:active});
+    d.onclick = () => {
+      active = u.username;
+      socket.emit("get_history", { userA: me, userB: active });
     };
 
-    usersBox.appendChild(d);
-  });
-});
-
-socket.on("history",(msgs)=>{
-  box.innerHTML="";
-
-  msgs.forEach(m=>{
-    const d=document.createElement("div");
-    d.className="msg "+(m.from===me?"me":"other");
-    d.innerText=m.text;
     box.appendChild(d);
   });
 });
 
-function send(){
-  socket.emit("chat_message",{
-    from:me,
-    to:active,
-    text:msg.value,
-    time:Date.now()
+socket.on("history", (msgs) => {
+  const box = document.getElementById("box");
+  box.innerHTML = "";
+
+  msgs.forEach(m => {
+    const d = document.createElement("div");
+    d.className = "msg " + (m.from === me ? "me" : "other");
+    d.innerText = m.text;
+    box.appendChild(d);
+  });
+});
+
+function send() {
+  socket.emit("chat_message", {
+    from: me,
+    to: active,
+    text: document.getElementById("msg").value,
+    time: Date.now()
   });
 
-  msg.value="";
+  document.getElementById("msg").value = "";
 }
 
 </script>
