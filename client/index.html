@@ -2,13 +2,13 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Buzzi Messenger 11.0</title>
+<title>Buzzi Messenger 11.1 FIX</title>
 
 <style>
 body {
   margin:0;
   font-family: Segoe UI;
-  background: linear-gradient(#dceaff, #f5f9ff);
+  background:#eaf2ff;
 }
 
 /* LOGIN */
@@ -42,7 +42,6 @@ input {
   height:calc(100vh - 40px);
 }
 
-/* USERS */
 .users {
   width:220px;
   background:#1e3f73;
@@ -50,7 +49,6 @@ input {
   padding:10px;
 }
 
-/* CHAT */
 .chat {
   flex:1;
   display:flex;
@@ -64,14 +62,14 @@ input {
 }
 
 .msg {
+  background:white;
+  margin:5px;
   padding:8px;
-  margin:6px;
   border-radius:10px;
   max-width:60%;
 }
 
 .me { background:#cfe3ff; margin-left:auto; }
-.them { background:white; }
 
 .input {
   display:flex;
@@ -91,37 +89,40 @@ button {
 
 <!-- LOGIN -->
 <div id="login">
-  <h2>Buzzi Messenger</h2>
+  <h2>Buzzi Messenger Login</h2>
+
   <input id="user" placeholder="username">
   <input id="pass" type="password" placeholder="password">
+
   <button onclick="register()">Register</button>
   <button onclick="login()">Login</button>
+
+  <p id="status"></p>
 </div>
 
 <!-- APP -->
 <div id="app">
 
-  <div class="header">💙 Buzzi Messenger 11.0 FINAL</div>
+  <div class="header">💙 Buzzi Messenger FIXED</div>
 
   <div class="container">
 
     <div class="users" id="users"></div>
 
     <div class="chat">
+
       <div class="messages" id="messages"></div>
 
       <div class="input">
-        <input id="msg" placeholder="Type message..." oninput="typing(true)" onblur="typing(false)">
+        <input id="msg">
         <button onclick="send()">Send</button>
       </div>
+
     </div>
 
   </div>
-</div>
 
-<!-- SOUNDS -->
-<audio id="snd_msg" src="https://cdn.pixabay.com/audio/message.mp3"></audio>
-<audio id="snd_login" src="https://cdn.pixabay.com/audio/notification.mp3"></audio>
+</div>
 
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 
@@ -129,7 +130,11 @@ button {
 const socket = io("https://buzzimessenger.onrender.com");
 
 let me = "";
-let currentChat = "global";
+
+/* STATUS TEXT */
+function setStatus(txt) {
+  document.getElementById("status").innerText = txt;
+}
 
 /* REGISTER */
 function register() {
@@ -137,6 +142,8 @@ function register() {
     username: user.value,
     password: pass.value
   });
+
+  setStatus("Registering...");
 }
 
 /* LOGIN */
@@ -145,27 +152,42 @@ function login() {
     username: user.value,
     password: pass.value
   });
+
+  setStatus("Logging in...");
 }
 
-/* LOGIN SUCCESS */
+/* SUCCESS */
 socket.on("login_success", (data) => {
   me = data.username;
 
   document.getElementById("login").style.display = "none";
   document.getElementById("app").style.display = "block";
+
+  setStatus("");
 });
 
-/* SOUNDS */
-socket.on("sound", (type) => {
-  if (type === "message") snd_msg.play();
-  if (type === "login") snd_login.play();
+/* FAIL */
+socket.on("login_failed", (msg) => {
+  setStatus("❌ " + msg);
+});
+
+socket.on("register_ok", () => {
+  setStatus("✅ Registered! You can login now");
+});
+
+socket.on("register_failed", (msg) => {
+  setStatus("❌ " + msg);
+});
+
+/* USERS */
+socket.on("users_update", (list) => {
+  users.innerHTML = list.map(u => `<div>👤 ${u}</div>`).join("");
 });
 
 /* SEND */
 function send() {
   socket.emit("send_message", {
     from: me,
-    to: currentChat,
     text: msg.value
   });
 
@@ -174,30 +196,14 @@ function send() {
 
 /* RECEIVE */
 socket.on("receive_message", (m) => {
-  const box = document.getElementById("messages");
-
   const div = document.createElement("div");
-  div.className = "msg " + (m.from === me ? "me" : "them");
+  div.className = "msg " + (m.from === me ? "me" : "");
 
   div.innerHTML = `<b>${m.from}</b><br>${m.text}`;
 
-  box.appendChild(div);
-  box.scrollTop = box.scrollHeight;
+  messages.appendChild(div);
+  messages.scrollTop = messages.scrollHeight;
 });
-
-/* USERS */
-socket.on("users_update", (list) => {
-  users.innerHTML = list.map(u => `<div>👤 ${u}</div>`).join("");
-});
-
-/* TYPING */
-function typing(state) {
-  socket.emit("typing", {
-    user: me,
-    to: currentChat,
-    isTyping: state
-  });
-}
 </script>
 
 </body>
