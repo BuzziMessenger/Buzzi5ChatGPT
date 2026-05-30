@@ -9,69 +9,89 @@ const app = express();
 const server = http.createServer(app);
 
 const io = new Server(server, {
-  cors: {
-    origin: "*"
-  }
+  cors: { origin: "*" }
 });
 
 app.use(cors());
 app.use(express.json());
 
-mongoose.connect(process.env.MONGO_URL)
-  .then(() => console.log("MongoDB verbonden"))
-  .catch(err => console.log("Mongo error:", err));
+mongoose.connect(process.env.MONGO_URL);
 
+/* MESSAGE MODEL */
 const MessageSchema = new mongoose.Schema({
   from: String,
+  to: String,
   text: String,
-  time: Number
+  avatar: String,
+  time: Number,
+  seen: { type: Boolean, default: false }
 });
 
 const Message = mongoose.model("Message", MessageSchema);
 
-let onlineUsers = {};
+/* USERS */
+let users = {};
 
 io.on("connection", (socket) => {
-  console.log("User connected:", socket.id);
 
-  socket.on("add_user", (username) => {
-    onlineUsers[socket.id] = username;
+  /* 👤 JOIN */
+  socket.on("add_user", (user) => {
+    users[socket.id] = {
+      id: socket.id,
+      name: user.name,
+      avatar: user.avatar
+    };
 
-    io.emit("update_users", Object.values(onlineUsers));
-    io.emit("user_joined", username);
+    io.emit("update_users", Object.values(users));
   });
 
-  socket.on("send_message", async (data) => {
-    const message = new Message({
-      from: data.from,
-      text: data.text,
-      time: Date.now()
+  /* 📥 LOAD DM HISTORY */
+  socket.on("load_dm", async ({user1, user2}) => {
+    const history = await Message.find({
+      $or: [
+        { from: user1, to: user2 },
+        { from: user2, to: user1 }
+      ]
+    }).sort({ time: 1 });
+
+    socket.emit("dm_history", history);
+  });
+
+  /* 💬 PRIVATE MESSAGE */
+  socket.on("private_message", async (msg) => {
+    const m = await Message.create({
+      ...msg,
+      time: Date.now(),
+      seen: false
     });
 
-    await message.save();
+    const target = Object.values(users)
+      .find(u => u.name === msg.to);
 
-    io.emit("receive_message", message);
-  });
-
-  socket.on("nudge", (from) => {
-    io.emit("nudge", from);
-  });
-
-  socket.on("disconnect", () => {
-    const username = onlineUsers[socket.id];
-
-    if (username) {
-      io.emit("user_left", username);
+    if (target) {
+      io.to(target.id).emit("private_message", m);
     }
 
-    delete onlineUsers[socket.id];
+    socket.emit("private_message", m);
+  });
 
-    io.emit("update_users", Object.values(onlineUsers));
+  /* 👁 SEEN */
+  socket.on("seen", async ({from, to}) => {
+    await Message.updateMany(
+      { from, to, seen: false },
+      { $set: { seen: true } }
+    );
+
+    io.emit("update_seen", { from, to });
+  });
+
+  /* ❌ DISCONNECT */
+  socket.on("disconnect", () => {
+    delete users[socket.id];
+    io.emit("update_users", Object.values(users));
   });
 });
 
-const PORT = process.env.PORT || 3000;
-
-server.listen(PORT, () => {
-  console.log("Server draait op port", PORT);
+server.listen(3000, () => {
+  console.log("Buzzi Messenger 4.0 running");
 });
