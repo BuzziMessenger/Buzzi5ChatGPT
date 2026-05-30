@@ -2,10 +2,6 @@ const express = require("express");
 const http = require("http");
 const cors = require("cors");
 const { Server } = require("socket.io");
-const socket = io("https://buzzimessenger.onrender.com", {
-  transports: ["websocket", "polling"],
-  forceNew: true
-});
 
 const app = express();
 app.use(cors());
@@ -16,8 +12,7 @@ const io = new Server(server, {
   cors: {
     origin: "*",
     methods: ["GET", "POST"]
-  },
-  transports: ["websocket", "polling"]
+  }
 });
 
 io.on("connection", (socket) => {
