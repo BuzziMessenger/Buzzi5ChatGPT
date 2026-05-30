@@ -7,9 +7,11 @@ require("dotenv").config();
 
 const app = express();
 const server = http.createServer(app);
+
 const io = new Server(server, {
   cors: {
-    origin: "*"
+    origin: "*",
+    methods: ["GET", "POST"]
   }
 });
 
@@ -21,12 +23,12 @@ app.get("/", (req, res) => {
   res.sendFile(__dirname + "/public/index.html");
 });
 
-// 🔌 MongoDB connectie
+// MongoDB connect
 mongoose.connect(process.env.MONGO_URL)
   .then(() => console.log("MongoDB verbonden"))
   .catch(err => console.log("Mongo error:", err));
 
-// 📦 Message schema + model
+// Schema
 const MessageSchema = new mongoose.Schema({
   from: String,
   to: String,
@@ -36,7 +38,7 @@ const MessageSchema = new mongoose.Schema({
 
 const Message = mongoose.model("Message", MessageSchema);
 
-// 📡 Socket connect
+// Socket
 io.on("connection", (socket) => {
   console.log("User connected:", socket.id);
 
@@ -58,7 +60,9 @@ io.on("connection", (socket) => {
   });
 });
 
-// 🚀 start server
-server.listen(3000, () => {
-  console.log("Server draait op http://localhost:3000");
+// PORT FIX (BELANGRIJK VOOR ONLINE)
+const PORT = process.env.PORT || 3000;
+
+server.listen(PORT, () => {
+  console.log("Server draait op port", PORT);
 });
