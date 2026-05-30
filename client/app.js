@@ -1,4 +1,4 @@
-const socket = io("https://buzzimessenger.onrender.com/");
+const socket = io("https://buzzimessenger.onrender.com");
 
 let me;
 let active;
