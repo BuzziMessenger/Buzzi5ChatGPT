@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <title>Buzzi Chat</title>
+  <style>
+    body {
+      font-family: Arial;
+      background: #e5ddd5;
+      display: flex;
+      justify-content: center;
+      padding-top: 40px;
+    }
+
+    .chat {
+      width: 400px;
+      background: white;
+      padding: 10px;
+      border-radius: 10px;
+      height: 500px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    #messages {
+      flex: 1;
+      overflow-y: auto;
+      margin-bottom: 10px;
+      border: 1px solid #ddd;
+      padding: 5px;
+    }
+
+    input {
+      padding: 8px;
+      margin: 2px;
+    }
+
+    button {
+      padding: 8px;
+      background: green;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+
+    .msg {
+      margin: 5px 0;
+      padding: 5px;
+      background: #f1f1f1;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="chat">
+  <div id="messages"></div>
+
+  <input id="from" placeholder="jouw naam" />
+  <input id="to" placeholder="naar wie" />
+  <input id="text" placeholder="bericht..." />
+  <button onclick="sendMessage()">Send</button>
+</div>
+
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script>
+  const socket = io("http://localhost:3000");
+
+  const messages = document.getElementById("messages");
+
+  socket.on("receive_message", (msg) => {
+    const div = document.createElement("div");
+    div.classList.add("msg");
+    div.innerText = `${msg.from}: ${msg.text}`;
+    messages.appendChild(div);
+  });
+
+  function sendMessage() {
+    const from = document.getElementById("from").value;
+    const to = document.getElementById("to").value;
+    const text = document.getElementById("text").value;
+
+    socket.emit("send_message", { from, to, text });
+
+    document.getElementById("text").value = "";
+  }
+</script>
+
+</body>
+</html>
