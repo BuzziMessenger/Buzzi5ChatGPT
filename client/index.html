@@ -2,207 +2,197 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Buzzi Messenger 4.0</title>
+<title>Buzzi Messenger 6.0</title>
 
 <style>
-body {
-  margin:0;
-  font-family: Arial;
+body { margin:0; font-family:Arial; background:#e6f0ff; }
+
+#login {
   display:flex;
   height:100vh;
-  background:#e6f0ff;
+  justify-content:center;
+  align-items:center;
+  flex-direction:column;
 }
 
-/* USERS */
-#users {
-  width:220px;
-  background:#2b579a;
-  color:white;
+#app {
+  display:none;
+  height:100vh;
+}
+
+#chat {
+  display:flex;
+  flex-direction:column;
+  height:100%;
+}
+
+#messages {
+  flex:1;
+  overflow:auto;
+  background:white;
   padding:10px;
 }
 
-.user {
-  display:flex;
-  align-items:center;
-  gap:8px;
-  padding:6px;
-  cursor:pointer;
+.msg {
+  margin:5px 0;
 }
 
-.user img {
-  width:30px;
-  height:30px;
-  border-radius:50%;
-}
-
-/* CHAT AREA */
-#desktop {
-  flex:1;
-  position:relative;
-}
-
-/* DM WINDOW */
-.window {
-  position:absolute;
-  width:320px;
-  height:400px;
-  background:white;
-  border:2px solid #2b579a;
-  box-shadow:0 10px 20px rgba(0,0,0,0.3);
-}
-
-.title {
-  background:#2b579a;
-  color:white;
-  padding:6px;
-  cursor:move;
-}
-
-.messages {
-  height:300px;
-  overflow:auto;
-  padding:8px;
-}
-
-.input {
+#input {
   display:flex;
 }
 
 input {
   flex:1;
-  padding:8px;
+  padding:10px;
 }
-
 button {
-  padding:8px;
-}
-
-/* AVATARS */
-.msg {
-  display:flex;
-  gap:8px;
-  margin:6px 0;
-}
-
-.msg img {
-  width:25px;
-  height:25px;
-  border-radius:50%;
+  padding:10px;
 }
 </style>
 </head>
 
 <body>
 
-<div id="users"></div>
-<div id="desktop"></div>
+<div id="login">
+  <h2>Buzzi Messenger Login</h2>
+  <input id="user" placeholder="username">
+  <input id="pass" type="password" placeholder="password">
+  <button onclick="register()">Register</button>
+  <button onclick="login()">Login</button>
+</div>
+
+<div id="app">
+
+  <div id="chat">
+    <div id="messages"></div>
+
+    <div id="input">
+      <input id="msg">
+
+      <input type="file" id="file">
+
+      <button onclick="send()">Send</button>
+    </div>
+
+    <button onclick="startVoice()">🎤 Voice</button>
+  </div>
+
+</div>
 
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 
 <script>
 const socket = io("https://buzzimessenger.onrender.com");
 
-let me = prompt("Username:");
-let avatar = prompt("Avatar URL (https://...jpg/png)");
+let username = "";
 
-socket.emit("add_user", { name: me, avatar });
-
-const usersBox = document.getElementById("users");
-const desktop = document.getElementById("desktop");
-
-let openChats = {};
-
-/* USERS */
-socket.on("update_users", (list) => {
-  usersBox.innerHTML = "<h3>Online</h3>";
-
-  list.forEach(u => {
-    const div = document.createElement("div");
-    div.className = "user";
-
-    div.innerHTML = `
-      <img src="${u.avatar}">
-      <span>${u.name}</span>
-    `;
-
-    div.onclick = () => openDM(u.name, u.avatar);
-
-    usersBox.appendChild(div);
+/* REGISTER */
+async function register() {
+  await fetch("https://buzzimessenger.onrender.com/register", {
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body: JSON.stringify({
+      username: user.value,
+      password: pass.value
+    })
   });
-});
 
-/* OPEN DM WINDOW */
-function openDM(user, avatarUrl) {
-  if (openChats[user]) return;
-
-  const win = document.createElement("div");
-  win.className = "window";
-  win.id = "dm_" + user;
-  win.style.top = "100px";
-  win.style.left = "250px";
-
-  win.innerHTML = `
-    <div class="title">Chat with ${user}</div>
-
-    <div class="messages" id="msg_${user}"></div>
-
-    <div class="input">
-      <input id="input_${user}">
-      <button onclick="sendDM('${user}','${avatarUrl}')">Send</button>
-    </div>
-  `;
-
-  desktop.appendChild(win);
-
-  openChats[user] = true;
-
-  socket.emit("load_dm", {
-    user1: me,
-    user2: user
-  });
+  alert("Registered!");
 }
 
-/* LOAD HISTORY */
-socket.on("dm_history", (msgs) => {
-  msgs.forEach(m => renderMsg(m));
-});
-
-/* RECEIVE DM */
-socket.on("private_message", (m) => {
-  renderMsg(m);
-});
-
-/* RENDER MESSAGE */
-function renderMsg(m) {
-  const box = document.getElementById("msg_" + (m.from === me ? m.to : m.from));
-  if (!box) return;
-
-  const div = document.createElement("div");
-  div.className = "msg";
-
-  div.innerHTML = `
-    <img src="${m.avatar}">
-    <div>
-      <b>${m.from}:</b> ${m.text}
-      <small>${m.seen ? "✔✔ seen" : "✔ sent"}</small>
-    </div>
-  `;
-
-  box.appendChild(div);
-}
-
-/* SEND DM */
-function sendDM(to, avatarUrl) {
-  const input = document.getElementById("input_" + to);
-
-  socket.emit("private_message", {
-    from: me,
-    to,
-    text: input.value,
-    avatar: avatar
+/* LOGIN */
+async function login() {
+  const res = await fetch("https://buzzimessenger.onrender.com/login", {
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body: JSON.stringify({
+      username: user.value,
+      password: pass.value
+    })
   });
 
-  input.value = "";
+  const data = await res.json();
+
+  username = data.username;
+
+  document.getElementById("login").style.display = "none";
+  document.getElementById("app").style.display = "block";
+
+  socket.emit("auth", { username });
+}
+
+/* SEND MESSAGE */
+async function send() {
+  let fileUrl = "";
+
+  const file = document.getElementById("file").files[0];
+
+  if (file) {
+    const form = new FormData();
+    form.append("file", file);
+
+    const res = await fetch("https://buzzimessenger.onrender.com/upload", {
+      method:"POST",
+      body: form
+    });
+
+    const data = await res.json();
+    fileUrl = data.url;
+  }
+
+  socket.emit("send_message", {
+    from: username,
+    text: msg.value,
+    file: fileUrl
+  });
+
+  msg.value = "";
+}
+
+/* RECEIVE */
+socket.on("receive_message", (m) => {
+  messages.innerHTML += `
+    <div class="msg">
+      <b>${m.from}:</b> ${m.text || ""}
+      ${m.file ? `<br><a href="${m.file}" target="_blank">📎 file</a>` : ""}
+    </div>
+  `;
+});
+
+/* 🎤 VOICE */
+let recorder;
+let chunks = [];
+
+async function startVoice() {
+  const stream = await navigator.mediaDevices.getUserMedia({ audio:true });
+
+  recorder = new MediaRecorder(stream);
+  recorder.start();
+
+  recorder.ondataavailable = e => chunks.push(e.data);
+
+  recorder.onstop = async () => {
+    const blob = new Blob(chunks, { type:"audio/webm" });
+
+    const form = new FormData();
+    form.append("file", blob, "voice.webm");
+
+    const res = await fetch("https://buzzimessenger.onrender.com/upload", {
+      method:"POST",
+      body: form
+    });
+
+    const data = await res.json();
+
+    socket.emit("send_message", {
+      from: username,
+      voice: data.url
+    });
+
+    chunks = [];
+  };
+
+  setTimeout(() => recorder.stop(), 4000);
 }
 </script>
 

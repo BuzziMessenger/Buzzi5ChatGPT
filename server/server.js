@@ -3,6 +3,10 @@ const http = require("http");
 const cors = require("cors");
 const { Server } = require("socket.io");
 const mongoose = require("mongoose");
+const multer = require("multer");
+const path = require("path");
+const jwt = require("jsonwebtoken");
+const bcrypt = require("bcryptjs");
 require("dotenv").config();
 
 const app = express();
@@ -14,84 +18,102 @@ const io = new Server(server, {
 
 app.use(cors());
 app.use(express.json());
+app.use("/uploads", express.static("uploads"));
 
 mongoose.connect(process.env.MONGO_URL);
 
-/* MESSAGE MODEL */
+/* STORAGE (FILES + VOICE) */
+const storage = multer.diskStorage({
+  destination: "./uploads",
+  filename: (req, file, cb) => {
+    cb(null, Date.now() + "-" + file.originalname);
+  }
+});
+const upload = multer({ storage });
+
+/* MODELS */
+const UserSchema = new mongoose.Schema({
+  username: String,
+  password: String,
+  avatar: String,
+  friends: [String]
+});
+
 const MessageSchema = new mongoose.Schema({
   from: String,
   to: String,
   text: String,
-  avatar: String,
-  time: Number,
-  seen: { type: Boolean, default: false }
+  file: String,
+  voice: String,
+  time: Number
 });
 
+const User = mongoose.model("User", UserSchema);
 const Message = mongoose.model("Message", MessageSchema);
 
-/* USERS */
-let users = {};
+/* AUTH */
+app.post("/register", async (req, res) => {
+  const { username, password } = req.body;
+
+  const hash = await bcrypt.hash(password, 10);
+
+  const user = await User.create({
+    username,
+    password: hash,
+    avatar: ""
+  });
+
+  res.json(user);
+});
+
+app.post("/login", async (req, res) => {
+  const { username, password } = req.body;
+
+  const user = await User.findOne({ username });
+  if (!user) return res.status(400).json("No user");
+
+  const ok = await bcrypt.compare(password, user.password);
+  if (!ok) return res.status(400).json("Wrong password");
+
+  const token = jwt.sign({ username }, process.env.JWT_SECRET);
+
+  res.json({ token, username });
+});
+
+/* FILE UPLOAD */
+app.post("/upload", upload.single("file"), (req, res) => {
+  res.json({
+    url: `https://buzzimessenger.onrender.com/uploads/${req.file.filename}`
+  });
+});
+
+/* USERS ONLINE */
+let online = {};
 
 io.on("connection", (socket) => {
 
-  /* 👤 JOIN */
-  socket.on("add_user", (user) => {
-    users[socket.id] = {
-      id: socket.id,
-      name: user.name,
-      avatar: user.avatar
-    };
-
-    io.emit("update_users", Object.values(users));
+  socket.on("auth", ({ username }) => {
+    online[socket.id] = username;
+    io.emit("online_users", Object.values(online));
   });
 
-  /* 📥 LOAD DM HISTORY */
-  socket.on("load_dm", async ({user1, user2}) => {
-    const history = await Message.find({
-      $or: [
-        { from: user1, to: user2 },
-        { from: user2, to: user1 }
-      ]
-    }).sort({ time: 1 });
-
-    socket.emit("dm_history", history);
-  });
-
-  /* 💬 PRIVATE MESSAGE */
-  socket.on("private_message", async (msg) => {
+  /* 💬 MESSAGE (TEXT + FILE + VOICE) */
+  socket.on("send_message", async (msg) => {
     const m = await Message.create({
       ...msg,
-      time: Date.now(),
-      seen: false
+      time: Date.now()
     });
 
-    const target = Object.values(users)
-      .find(u => u.name === msg.to);
-
-    if (target) {
-      io.to(target.id).emit("private_message", m);
-    }
-
-    socket.emit("private_message", m);
-  });
-
-  /* 👁 SEEN */
-  socket.on("seen", async ({from, to}) => {
-    await Message.updateMany(
-      { from, to, seen: false },
-      { $set: { seen: true } }
-    );
-
-    io.emit("update_seen", { from, to });
+    io.emit("receive_message", m);
   });
 
   /* ❌ DISCONNECT */
   socket.on("disconnect", () => {
-    delete users[socket.id];
-    io.emit("update_users", Object.values(users));
+    delete online[socket.id];
+    io.emit("online_users", Object.values(online));
   });
 });
 
 server.listen(3000, () => {
-  console.log("Buzzi Messenger 4.0 running");
+  console.log("Buzzi Messenger 6.0 ULTIMATE running");
 });
