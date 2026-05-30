@@ -2,132 +2,134 @@
 <html lang="nl">
 <head>
 <meta charset="UTF-8" />
-<title>Buzzi MSN 2005</title>
+<title>Buzzi Desktop Messenger</title>
 
 <style>
 body {
   margin: 0;
   font-family: Tahoma, Arial;
-  background: #d6dbe5;
+  background: linear-gradient(#3a6ea5, #1e3a5f);
+  height: 100vh;
+  overflow: hidden;
 }
 
-/* WINDOW */
+/* 🖥 DESKTOP */
+.desktop {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+}
+
+/* 🪟 WINDOW */
 .window {
-  width: 900px;
-  height: 600px;
-  margin: 30px auto;
-  display: flex;
-  border: 2px solid #3a6ea5;
+  width: 320px;
   background: #eceff5;
+  border: 2px solid #2b579a;
+  position: absolute;
+  top: 80px;
+  left: 80px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.4);
 }
 
-/* SIDEBAR */
-.sidebar {
-  width: 250px;
-  background: #dfe7f2;
-  border-right: 1px solid #9bb3d3;
-}
-
-.sidebar-header {
-  background: #2b579a;
+/* HEADER BAR */
+.titlebar {
+  background: linear-gradient(#3a6ea5, #2b579a);
   color: white;
-  padding: 10px;
-  font-weight: bold;
-}
-
-.user {
-  padding: 8px;
-  display: flex;
-  align-items: center;
-}
-
-.dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  margin-right: 8px;
-  background: #999;
-}
-
-.online {
-  background: #00c853;
-  box-shadow: 0 0 6px #00c853;
+  padding: 6px;
+  font-size: 13px;
+  cursor: move;
 }
 
 /* CHAT */
-.chat {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-}
-
-.chat-header {
-  background: #2b579a;
-  color: white;
-  padding: 10px;
-}
-
 #messages {
-  flex: 1;
-  background: white;
-  padding: 10px;
+  height: 250px;
   overflow-y: auto;
-}
-
-.msg {
-  margin-bottom: 8px;
+  background: white;
+  padding: 8px;
+  font-size: 13px;
 }
 
 /* INPUT */
-.input-area {
+.input {
   display: flex;
-  padding: 10px;
+  padding: 5px;
   background: #dfe7f2;
 }
 
 input {
   flex: 1;
-  padding: 8px;
+  padding: 5px;
 }
 
 button {
   margin-left: 5px;
+}
+
+/* TASKBAR */
+.taskbar {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  height: 40px;
+  background: #1b1b1b;
+  display: flex;
+  align-items: center;
+  padding: 5px;
+  color: white;
+}
+
+.start {
+  background: #2b579a;
+  padding: 5px 10px;
+  cursor: pointer;
+}
+
+/* USERS WINDOW */
+.users {
+  position: absolute;
+  top: 80px;
+  left: 450px;
+  width: 200px;
+  background: #eceff5;
+  border: 2px solid #2b579a;
+}
+
+.user {
+  padding: 5px;
+  border-bottom: 1px solid #ccc;
 }
 </style>
 </head>
 
 <body>
 
-<div class="window">
+<div class="desktop">
 
-  <!-- USERS -->
-  <div class="sidebar">
-    <div class="sidebar-header">🟢 Online</div>
-    <div id="users"></div>
-  </div>
-
-  <!-- CHAT -->
-  <div class="chat">
-    <div class="chat-header">MSN 2005 Chat</div>
+  <!-- CHAT WINDOW -->
+  <div class="window" id="chatWindow">
+    <div class="titlebar">💬 Buzzi Messenger</div>
 
     <div id="messages"></div>
 
-    <div class="input-area">
+    <div class="input">
       <input id="msgInput" />
-      <button onclick="sendMessage()">Send</button>
+      <button onclick="send()">Send</button>
       <button onclick="nudge()">📳</button>
-      <button onclick="toggleEmoji()">😊</button>
     </div>
   </div>
 
-</div>
+  <!-- USERS WINDOW -->
+  <div class="users" id="usersWindow">
+    <div class="titlebar">🟢 Online</div>
+    <div id="users"></div>
+  </div>
 
-<!-- EMOJI BOX -->
-<div id="emojis" style="display:none;position:fixed;bottom:80px;right:20px;background:white;border:1px solid #999;padding:5px;">
-  <span onclick="addEmoji('😊')">😊</span>
-  <span onclick="addEmoji('😂')">😂</span>
-  <span onclick="addEmoji('😍')">😍</span>
-  <span onclick="addEmoji('😎')">😎</span>
+  <!-- TASKBAR -->
+  <div class="taskbar">
+    <div class="start">Start</div>
+    <div style="margin-left:10px;">Buzzi Messenger Running</div>
+  </div>
+
 </div>
 
 <!-- SOCKET -->
@@ -136,42 +138,30 @@ button {
 <script>
 const socket = io("https://buzzimessenger.onrender.com");
 
-const messages = document.getElementById("messages");
+const msg = document.getElementById("messages");
 const users = document.getElementById("users");
 const input = document.getElementById("msgInput");
 
-let myName = prompt("Naam?");
-socket.emit("add_user", myName);
+let myName = prompt("Username:");
+socket.emit("add_user", { name: myName });
 
-/* MESSAGES */
-socket.on("receive_message", (msg) => {
+socket.on("receive_message", (m) => {
   const div = document.createElement("div");
-  div.className = "msg";
-  div.innerHTML = `<b>${msg.from}:</b> ${msg.text}`;
-  messages.appendChild(div);
+  div.innerHTML = `<b>${m.from}:</b> ${m.text}`;
+  msg.appendChild(div);
 });
 
-/* USERS */
 socket.on("update_users", (list) => {
   users.innerHTML = "";
-
   list.forEach(u => {
-    const div = document.createElement("div");
-    div.className = "user";
-    div.innerHTML = `<div class="dot online"></div>${u}`;
-    users.appendChild(div);
+    const d = document.createElement("div");
+    d.className = "user";
+    d.innerText = u.name;
+    users.appendChild(d);
   });
 });
 
-/* NUDE */
-socket.on("nudge", (from) => {
-  alert(from + " nudged you!");
-  document.body.style.transform = "translateX(10px)";
-  setTimeout(() => document.body.style.transform = "translateX(0)", 100);
-});
-
-/* SEND */
-function sendMessage() {
+function send() {
   socket.emit("send_message", {
     from: myName,
     text: input.value
@@ -179,19 +169,8 @@ function sendMessage() {
   input.value = "";
 }
 
-/* NUDE BTN */
 function nudge() {
   socket.emit("nudge", myName);
-}
-
-/* EMOJI */
-function toggleEmoji() {
-  const e = document.getElementById("emojis");
-  e.style.display = e.style.display === "block" ? "none" : "block";
-}
-
-function addEmoji(e) {
-  input.value += e;
 }
 </script>
 
