@@ -1,8 +1,0 @@
-{
-  "name": "buzzi-client",
-  "version": "1.0.0",
-  "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build"
-  }
-}
