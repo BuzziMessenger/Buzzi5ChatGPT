@@ -106,6 +106,10 @@ io.on("connection", (socket) => {
     io.emit("receive_message", msg);
   });
 
+  socket.on("login", (data) => {
+  console.log("LOGIN RECEIVED:", data);
+});
+
   socket.on("disconnect", () => {
     delete onlineUsers[socket.id];
     io.emit("users_update", Object.values(onlineUsers));
