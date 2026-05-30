@@ -137,7 +137,16 @@ const SOCKET_URLS = [
   "http://localhost:3000"
 ];
 
-let socket;
+const SOCKET_URLS = [
+  "https://buzzimessenger.onrender.com",
+  "http://localhost:3000"
+];
+
+let socket = io(SOCKET_URLS[0], {
+  reconnection: true,
+  reconnectionAttempts: 999,
+  reconnectionDelay: 1000
+});
 let me = "";
 
 /* CONNECT FUNCTION */
