@@ -1,29 +1,26 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<title>Buzzi Messenger</title>
+<meta charset="UTF-8">
+<title>Buzzi Messenger Clean</title>
 
 <style>
 body {
   margin:0;
-  font-family: Segoe UI, Arial;
-  background: linear-gradient(#dbe9ff, #f5f9ff);
+  font-family:Segoe UI;
+  background:#eaf2ff;
 }
 
-/* STATUS */
 #statusBar {
-  position: fixed;
+  position:fixed;
   top:0;
   width:100%;
-  background:#1b1b1b;
+  background:#111;
   color:white;
-  font-size:12px;
   padding:6px;
-  z-index:999;
+  font-size:12px;
 }
 
-/* LOGIN */
 #login {
   display:flex;
   height:100vh;
@@ -35,10 +32,9 @@ body {
 input {
   margin:5px;
   padding:10px;
-  width:200px;
+  width:220px;
 }
 
-/* APP */
 #app {
   display:none;
   height:100vh;
@@ -48,7 +44,6 @@ input {
   background:#2b579a;
   color:white;
   padding:10px;
-  font-weight:bold;
 }
 
 .container {
@@ -56,16 +51,13 @@ input {
   height:calc(100vh - 40px);
 }
 
-/* USERS */
 .users {
   width:220px;
   background:#1e3f73;
   color:white;
   padding:10px;
-  overflow-y:auto;
 }
 
-/* CHAT */
 .chat {
   flex:1;
   display:flex;
@@ -75,7 +67,7 @@ input {
 .messages {
   flex:1;
   padding:10px;
-  overflow-y:auto;
+  overflow:auto;
 }
 
 .msg {
@@ -84,7 +76,6 @@ input {
   padding:8px;
   border-radius:10px;
   max-width:60%;
-  box-shadow:0 2px 5px rgba(0,0,0,0.1);
 }
 
 .me {
@@ -95,19 +86,16 @@ input {
 .input {
   display:flex;
   padding:10px;
-  background:#fff;
+  background:white;
 }
 
 button {
   padding:10px;
+  margin:5px;
   background:#2b579a;
   color:white;
   border:none;
   cursor:pointer;
-}
-
-button:hover {
-  background:#1f447a;
 }
 </style>
 </head>
@@ -118,21 +106,21 @@ button:hover {
 
 <!-- LOGIN -->
 <div id="login">
-  <h2>💙 Buzzi Messenger</h2>
+  <h2>Buzzi Messenger</h2>
 
-  <input id="user" placeholder="username" />
-  <input id="pass" type="password" placeholder="password" />
+  <input id="username" placeholder="username">
+  <input id="password" type="password" placeholder="password">
 
-  <button onclick="register()">Register</button>
-  <button onclick="login()">Login</button>
+  <button id="btnRegister">Register</button>
+  <button id="btnLogin">Login</button>
 
-  <p id="status"></p>
+  <p id="statusText"></p>
 </div>
 
 <!-- APP -->
 <div id="app">
 
-  <div class="header">💙 Buzzi Messenger (MSN Style)</div>
+  <div class="header">💙 Buzzi Messenger Clean</div>
 
   <div class="container">
 
@@ -143,8 +131,8 @@ button:hover {
       <div class="messages" id="messages"></div>
 
       <div class="input">
-        <input id="msg" placeholder="Type message..." />
-        <button onclick="send()">Send</button>
+        <input id="messageInput" placeholder="Type message...">
+        <button id="btnSend">Send</button>
       </div>
 
     </div>
@@ -153,114 +141,161 @@ button:hover {
 
 </div>
 
-<!-- SOCKET -->
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 
 <script>
 /* =========================
-   SOCKET (SINGLE INSTANCE)
+   APP STATE
 ========================= */
-const socket = io("https://buzzimessenger.onrender.com", {
-  reconnection: true,
-  reconnectionAttempts: 999,
-  reconnectionDelay: 1000
-});
+const state = {
+  me: "",
+  socket: null
+};
 
-/* STATE */
-let me = "";
-
-/* STATUS BAR */
-function setStatusBar(text) {
-  document.getElementById("statusBar").innerText = text;
-}
-
-/* LOGIN */
-function login() {
-  socket.emit("login", {
-    username: user.value,
-    password: pass.value
+/* =========================
+   INIT SOCKET
+========================= */
+function initSocket() {
+  state.socket = io("https://buzzimessenger.onrender.com", {
+    reconnection: true,
+    reconnectionAttempts: 999,
+    reconnectionDelay: 1000
   });
 
-  status.innerText = "Logging in...";
-}
-
-/* REGISTER */
-function register() {
-  socket.emit("register", {
-    username: user.value,
-    password: pass.value
-  });
-
-  status.innerText = "Registering...";
-}
-
-/* SEND MESSAGE */
-function send() {
-  if (!me) return;
-
-  socket.emit("send_message", {
-    from: me,
-    text: msg.value
-  });
-
-  msg.value = "";
+  bindSocketEvents();
 }
 
 /* =========================
    SOCKET EVENTS
 ========================= */
+function bindSocketEvents() {
+  const socket = state.socket;
 
-socket.on("connect", () => {
-  setStatusBar("🟢 Connected");
-});
+  socket.on("connect", () => {
+    setStatusBar("🟢 Connected");
+  });
 
-socket.on("disconnect", () => {
-  setStatusBar("🟠 Disconnected...");
-});
+  socket.on("disconnect", () => {
+    setStatusBar("🟠 Disconnected");
+  });
 
-socket.on("connect_error", () => {
-  setStatusBar("🔴 Connection error...");
-});
+  socket.on("connect_error", () => {
+    setStatusBar("🔴 Connection error");
+  });
 
-/* LOGIN SUCCESS */
-socket.on("login_success", (data) => {
-  me = data.username;
+  socket.on("login_success", (data) => {
+    state.me = data.username;
+    showApp();
+  });
 
-  login.style.display = "none";
-  app.style.display = "block";
+  socket.on("login_failed", (msg) => {
+    setStatusText("❌ " + msg);
+  });
 
-  setStatus(" ");
-});
+  socket.on("register_ok", () => {
+    setStatusText("✅ Registered");
+  });
 
-/* LOGIN FAIL */
-socket.on("login_failed", (msg) => {
-  status.innerText = "❌ " + msg;
-});
+  socket.on("register_failed", (msg) => {
+    setStatusText("❌ " + msg);
+  });
 
-/* REGISTER */
-socket.on("register_ok", () => {
-  status.innerText = "✅ Registered! Now login.";
-});
+  socket.on("users_update", (list) => {
+    renderUsers(list);
+  });
 
-socket.on("register_failed", (msg) => {
-  status.innerText = "❌ " + msg;
-});
+  socket.on("receive_message", (m) => {
+    renderMessage(m);
+  });
+}
 
-/* USERS */
-socket.on("users_update", (list) => {
-  users.innerHTML = list.map(u => "👤 " + u).join("<br>");
-});
+/* =========================
+   UI HELPERS
+========================= */
+function setStatusBar(text) {
+  document.getElementById("statusBar").innerText = text;
+}
 
-/* MESSAGES */
-socket.on("receive_message", (m) => {
+function setStatusText(text) {
+  document.getElementById("statusText").innerText = text;
+}
+
+function showApp() {
+  document.getElementById("login").style.display = "none";
+  document.getElementById("app").style.display = "block";
+}
+
+function renderUsers(list) {
+  document.getElementById("users").innerHTML =
+    list.map(u => "👤 " + u).join("<br>");
+}
+
+function renderMessage(m) {
   const div = document.createElement("div");
-  div.className = "msg " + (m.from === me ? "me" : "");
+  div.className = "msg " + (m.from === state.me ? "me" : "");
+  div.innerHTML = `<b>${m.from}</b><br>${m.text}`;
 
-  div.innerHTML = "<b>" + m.from + "</b><br>" + m.text;
+  const box = document.getElementById("messages");
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+}
 
-  messages.appendChild(div);
-  messages.scrollTop = messages.scrollHeight;
-});
+/* =========================
+   ACTIONS
+========================= */
+function login() {
+  state.socket.emit("login", {
+    username: document.getElementById("username").value,
+    password: document.getElementById("password").value
+  });
+
+  setStatusText("Logging in...");
+}
+
+function register() {
+  state.socket.emit("register", {
+    username: document.getElementById("username").value,
+    password: document.getElementById("password").value
+  });
+
+  setStatusText("Registering...");
+}
+
+function sendMessage() {
+  state.socket.emit("send_message", {
+    from: state.me,
+    text: document.getElementById("messageInput").value
+  });
+
+  document.getElementById("messageInput").value = "";
+}
+
+/* =========================
+   EVENT LISTENERS (NO ONCLICK)
+========================= */
+function bindUI() {
+  document.getElementById("btnLogin")
+    .addEventListener("click", login);
+
+  document.getElementById("btnRegister")
+    .addEventListener("click", register);
+
+  document.getElementById("btnSend")
+    .addEventListener("click", sendMessage);
+
+  document.getElementById("messageInput")
+    .addEventListener("keydown", (e) => {
+      if (e.key === "Enter") sendMessage();
+    });
+}
+
+/* =========================
+   START APP
+========================= */
+(function initApp() {
+  initSocket();
+  bindUI();
+})();
 </script>
 
 </body>
