@@ -1,25 +1,26 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Buzzi Messenger 11.2 Bulletproof</title>
+<meta charset="UTF-8" />
+<title>Buzzi Messenger</title>
 
 <style>
 body {
   margin:0;
-  font-family:Segoe UI;
-  background:#eaf2ff;
+  font-family: Segoe UI, Arial;
+  background: linear-gradient(#dbe9ff, #f5f9ff);
 }
 
-/* STATUS BAR */
+/* STATUS */
 #statusBar {
-  position:fixed;
+  position: fixed;
   top:0;
   width:100%;
-  background:#222;
+  background:#1b1b1b;
   color:white;
-  padding:6px;
   font-size:12px;
+  padding:6px;
+  z-index:999;
 }
 
 /* LOGIN */
@@ -31,14 +32,23 @@ body {
   flex-direction:column;
 }
 
-input { margin:5px; padding:10px; }
+input {
+  margin:5px;
+  padding:10px;
+  width:200px;
+}
 
-#app { display:none; }
+/* APP */
+#app {
+  display:none;
+  height:100vh;
+}
 
 .header {
   background:#2b579a;
   color:white;
   padding:10px;
+  font-weight:bold;
 }
 
 .container {
@@ -46,13 +56,16 @@ input { margin:5px; padding:10px; }
   height:calc(100vh - 40px);
 }
 
+/* USERS */
 .users {
   width:220px;
   background:#1e3f73;
   color:white;
   padding:10px;
+  overflow-y:auto;
 }
 
+/* CHAT */
 .chat {
   flex:1;
   display:flex;
@@ -62,7 +75,7 @@ input { margin:5px; padding:10px; }
 .messages {
   flex:1;
   padding:10px;
-  overflow:auto;
+  overflow-y:auto;
 }
 
 .msg {
@@ -70,11 +83,19 @@ input { margin:5px; padding:10px; }
   margin:5px;
   padding:8px;
   border-radius:10px;
+  max-width:60%;
+  box-shadow:0 2px 5px rgba(0,0,0,0.1);
+}
+
+.me {
+  background:#cfe3ff;
+  margin-left:auto;
 }
 
 .input {
   display:flex;
   padding:10px;
+  background:#fff;
 }
 
 button {
@@ -82,6 +103,11 @@ button {
   background:#2b579a;
   color:white;
   border:none;
+  cursor:pointer;
+}
+
+button:hover {
+  background:#1f447a;
 }
 </style>
 </head>
@@ -92,10 +118,10 @@ button {
 
 <!-- LOGIN -->
 <div id="login">
-  <h2>Buzzi Messenger</h2>
+  <h2>💙 Buzzi Messenger</h2>
 
-  <input id="user" placeholder="username">
-  <input id="pass" type="password" placeholder="password">
+  <input id="user" placeholder="username" />
+  <input id="pass" type="password" placeholder="password" />
 
   <button onclick="register()">Register</button>
   <button onclick="login()">Login</button>
@@ -106,7 +132,7 @@ button {
 <!-- APP -->
 <div id="app">
 
-  <div class="header">💙 Buzzi 11.2 Bulletproof</div>
+  <div class="header">💙 Buzzi Messenger (MSN Style)</div>
 
   <div class="container">
 
@@ -117,7 +143,7 @@ button {
       <div class="messages" id="messages"></div>
 
       <div class="input">
-        <input id="msg">
+        <input id="msg" placeholder="Type message..." />
         <button onclick="send()">Send</button>
       </div>
 
@@ -127,90 +153,25 @@ button {
 
 </div>
 
+<!-- SOCKET -->
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 
 <script>
-
-/* 🔥 MULTIPLE FALLBACK URLS */
-const SOCKET_URLS = [
-  "https://buzzimessenger.onrender.com",
-];
-
-let socket = io(SOCKET_URLS[0], {
+/* =========================
+   SOCKET (SINGLE INSTANCE)
+========================= */
+const socket = io("https://buzzimessenger.onrender.com", {
   reconnection: true,
   reconnectionAttempts: 999,
   reconnectionDelay: 1000
 });
+
+/* STATE */
 let me = "";
 
-/* CONNECT FUNCTION */
-function connect(urlIndex = 0) {
-
-  if (urlIndex >= SOCKET_URLS.length) {
-    document.getElementById("statusBar").innerText = "🔴 Offline (no server)";
-    return;
-  }
-
-  const url = SOCKET_URLS[urlIndex];
-
-  document.getElementById("statusBar").innerText = "⚪ Connecting: " + url;
-
-  socket = io(url, {
-    reconnection: true,
-    reconnectionAttempts: 10,
-    reconnectionDelay: 1000
-  });
-
-  socket.on("connect", () => {
-    document.getElementById("statusBar").innerText = "🟢 Connected";
-  });
-
-  socket.on("disconnect", () => {
-    document.getElementById("statusBar").innerText = "🟠 Disconnected - retrying...";
-  });
-
-  socket.on("connect_error", () => {
-    document.getElementById("statusBar").innerText = "🔴 Failed - trying fallback...";
-    setTimeout(() => connect(urlIndex + 1), 2000);
-  });
-
-  bindSocketEvents();
-}
-
-connect();
-
-/* EVENTS */
-function bindSocketEvents() {
-
-  socket.on("login_success", (data) => {
-    me = data.username;
-    login.style.display = "none";
-    app.style.display = "block";
-  });
-
-  socket.on("login_failed", (msg) => {
-    status.innerText = "❌ " + msg;
-  });
-
-  socket.on("register_ok", () => {
-    status.innerText = "✅ Registered";
-  });
-
-  socket.on("register_failed", (msg) => {
-    status.innerText = "❌ " + msg;
-  });
-
-  socket.on("users_update", (list) => {
-    users.innerHTML = list.map(u => "👤 " + u).join("<br>");
-  });
-
-  socket.on("receive_message", (m) => {
-    const div = document.createElement("div");
-    div.className = "msg";
-    div.innerHTML = "<b>" + m.from + "</b><br>" + m.text;
-    messages.appendChild(div);
-    messages.scrollTop = messages.scrollHeight;
-  });
+/* STATUS BAR */
+function setStatusBar(text) {
+  document.getElementById("statusBar").innerText = text;
 }
 
 /* LOGIN */
@@ -233,8 +194,10 @@ function register() {
   status.innerText = "Registering...";
 }
 
-/* SEND */
+/* SEND MESSAGE */
 function send() {
+  if (!me) return;
+
   socket.emit("send_message", {
     from: me,
     text: msg.value
@@ -243,6 +206,61 @@ function send() {
   msg.value = "";
 }
 
+/* =========================
+   SOCKET EVENTS
+========================= */
+
+socket.on("connect", () => {
+  setStatusBar("🟢 Connected");
+});
+
+socket.on("disconnect", () => {
+  setStatusBar("🟠 Disconnected...");
+});
+
+socket.on("connect_error", () => {
+  setStatusBar("🔴 Connection error...");
+});
+
+/* LOGIN SUCCESS */
+socket.on("login_success", (data) => {
+  me = data.username;
+
+  login.style.display = "none";
+  app.style.display = "block";
+
+  setStatus(" ");
+});
+
+/* LOGIN FAIL */
+socket.on("login_failed", (msg) => {
+  status.innerText = "❌ " + msg;
+});
+
+/* REGISTER */
+socket.on("register_ok", () => {
+  status.innerText = "✅ Registered! Now login.";
+});
+
+socket.on("register_failed", (msg) => {
+  status.innerText = "❌ " + msg;
+});
+
+/* USERS */
+socket.on("users_update", (list) => {
+  users.innerHTML = list.map(u => "👤 " + u).join("<br>");
+});
+
+/* MESSAGES */
+socket.on("receive_message", (m) => {
+  const div = document.createElement("div");
+  div.className = "msg " + (m.from === me ? "me" : "");
+
+  div.innerHTML = "<b>" + m.from + "</b><br>" + m.text;
+
+  messages.appendChild(div);
+  messages.scrollTop = messages.scrollHeight;
+});
 </script>
 
 </body>
