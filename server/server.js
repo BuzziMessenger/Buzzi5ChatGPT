@@ -23,7 +23,7 @@ app.get("/", (req, res) => {
   res.sendFile(__dirname + "/public/index.html");
 });
 
-// MongoDB connect
+// MongoDB
 mongoose.connect(process.env.MONGO_URL)
   .then(() => console.log("MongoDB verbonden"))
   .catch(err => console.log("Mongo error:", err));
@@ -51,7 +51,6 @@ io.on("connection", (socket) => {
     });
 
     await message.save();
-
     io.emit("receive_message", message);
   });
 
@@ -60,7 +59,7 @@ io.on("connection", (socket) => {
   });
 });
 
-// PORT FIX (BELANGRIJK VOOR ONLINE)
+// PORT (BELANGRIJK VOOR RENDER)
 const PORT = process.env.PORT || 3000;
 
 server.listen(PORT, () => {
