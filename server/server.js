@@ -8,6 +8,7 @@ require("dotenv").config();
 const app = express();
 const server = http.createServer(app);
 
+// Socket.IO setup
 const io = new Server(server, {
   cors: {
     origin: "*",
@@ -19,16 +20,17 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static("public"));
 
+// Homepage
 app.get("/", (req, res) => {
-  res.sendFile(__dirname + "/public/index.html");
+  res.send("Buzzi Messenger backend is running");
 });
 
-// MongoDB
+// MongoDB connect
 mongoose.connect(process.env.MONGO_URL)
   .then(() => console.log("MongoDB verbonden"))
   .catch(err => console.log("Mongo error:", err));
 
-// Schema
+// Message schema
 const MessageSchema = new mongoose.Schema({
   from: String,
   to: String,
@@ -38,7 +40,7 @@ const MessageSchema = new mongoose.Schema({
 
 const Message = mongoose.model("Message", MessageSchema);
 
-// Socket
+// Socket events
 io.on("connection", (socket) => {
   console.log("User connected:", socket.id);
 
@@ -51,15 +53,16 @@ io.on("connection", (socket) => {
     });
 
     await message.save();
+
     io.emit("receive_message", message);
   });
 
   socket.on("disconnect", () => {
-    console.log("User disconnected");
+    console.log("User disconnected:", socket.id);
   });
 });
 
-// PORT (BELANGRIJK VOOR RENDER)
+// PORT (RENDER FIX)
 const PORT = process.env.PORT || 3000;
 
 server.listen(PORT, () => {
