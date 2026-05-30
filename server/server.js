@@ -8,46 +8,42 @@ require("dotenv").config();
 const app = express();
 const server = http.createServer(app);
 
-// Socket.IO setup
 const io = new Server(server, {
   cors: {
-    origin: "*",
-    methods: ["GET", "POST"]
+    origin: "*"
   }
 });
 
 app.use(cors());
 app.use(express.json());
-app.use(express.static("public"));
 
-// Homepage
-app.get("/", (req, res) => {
-  res.send("Buzzi Messenger backend is running");
-});
-
-// MongoDB connect
 mongoose.connect(process.env.MONGO_URL)
   .then(() => console.log("MongoDB verbonden"))
   .catch(err => console.log("Mongo error:", err));
 
-// Message schema
 const MessageSchema = new mongoose.Schema({
   from: String,
-  to: String,
   text: String,
   time: Number
 });
 
 const Message = mongoose.model("Message", MessageSchema);
 
-// Socket events
+let onlineUsers = {};
+
 io.on("connection", (socket) => {
   console.log("User connected:", socket.id);
+
+  socket.on("add_user", (username) => {
+    onlineUsers[socket.id] = username;
+
+    io.emit("update_users", Object.values(onlineUsers));
+    io.emit("user_joined", username);
+  });
 
   socket.on("send_message", async (data) => {
     const message = new Message({
       from: data.from,
-      to: data.to,
       text: data.text,
       time: Date.now()
     });
@@ -57,12 +53,23 @@ io.on("connection", (socket) => {
     io.emit("receive_message", message);
   });
 
+  socket.on("nudge", (from) => {
+    io.emit("nudge", from);
+  });
+
   socket.on("disconnect", () => {
-    console.log("User disconnected:", socket.id);
+    const username = onlineUsers[socket.id];
+
+    if (username) {
+      io.emit("user_left", username);
+    }
+
+    delete onlineUsers[socket.id];
+
+    io.emit("update_users", Object.values(onlineUsers));
   });
 });
 
-// PORT (RENDER FIX)
 const PORT = process.env.PORT || 3000;
 
 server.listen(PORT, () => {

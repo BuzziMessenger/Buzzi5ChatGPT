@@ -2,160 +2,196 @@
 <html lang="nl">
 <head>
 <meta charset="UTF-8" />
-<title>Buzzi Messenger</title>
+<title>Buzzi MSN 2005</title>
 
 <style>
 body {
   margin: 0;
-  font-family: Arial, sans-serif;
-  background: #0f172a;
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
+  font-family: Tahoma, Arial;
+  background: #d6dbe5;
 }
 
-/* HEADER */
-header {
-  background: #111827;
+/* WINDOW */
+.window {
+  width: 900px;
+  height: 600px;
+  margin: 30px auto;
+  display: flex;
+  border: 2px solid #3a6ea5;
+  background: #eceff5;
+}
+
+/* SIDEBAR */
+.sidebar {
+  width: 250px;
+  background: #dfe7f2;
+  border-right: 1px solid #9bb3d3;
+}
+
+.sidebar-header {
+  background: #2b579a;
   color: white;
-  padding: 14px;
-  font-size: 18px;
+  padding: 10px;
   font-weight: bold;
-  text-align: center;
-  border-bottom: 1px solid #1f2937;
 }
 
-/* CHAT AREA */
-#chat {
+.user {
+  padding: 8px;
+  display: flex;
+  align-items: center;
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-right: 8px;
+  background: #999;
+}
+
+.online {
+  background: #00c853;
+  box-shadow: 0 0 6px #00c853;
+}
+
+/* CHAT */
+.chat {
   flex: 1;
-  padding: 15px;
-  overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 10px;
 }
 
-/* MESSAGE BUBBLES */
-.msg {
-  max-width: 70%;
-  padding: 10px 14px;
-  border-radius: 18px;
-  font-size: 14px;
-  line-height: 1.4;
-  word-wrap: break-word;
-}
-
-/* OWN MESSAGE */
-.me {
-  align-self: flex-end;
-  background: #2563eb;
+.chat-header {
+  background: #2b579a;
   color: white;
-  border-bottom-right-radius: 5px;
+  padding: 10px;
 }
 
-/* OTHER MESSAGE */
-.other {
-  align-self: flex-start;
-  background: #1f2937;
-  color: #e5e7eb;
-  border-bottom-left-radius: 5px;
+#messages {
+  flex: 1;
+  background: white;
+  padding: 10px;
+  overflow-y: auto;
 }
 
-/* INPUT BAR */
+.msg {
+  margin-bottom: 8px;
+}
+
+/* INPUT */
 .input-area {
   display: flex;
-  padding: 12px;
-  background: #111827;
-  border-top: 1px solid #1f2937;
+  padding: 10px;
+  background: #dfe7f2;
 }
 
 input {
   flex: 1;
-  padding: 12px;
-  border-radius: 20px;
-  border: none;
-  outline: none;
-  background: #1f2937;
-  color: white;
+  padding: 8px;
 }
 
 button {
-  margin-left: 10px;
-  padding: 12px 18px;
-  border: none;
-  border-radius: 20px;
-  background: #2563eb;
-  color: white;
-  cursor: pointer;
-}
-
-button:hover {
-  background: #1d4ed8;
-}
-
-/* SCROLLBAR */
-#chat::-webkit-scrollbar {
-  width: 6px;
-}
-#chat::-webkit-scrollbar-thumb {
-  background: #374151;
-  border-radius: 10px;
+  margin-left: 5px;
 }
 </style>
 </head>
 
 <body>
 
-<header>Buzzi Messenger 💬</header>
+<div class="window">
 
-<div id="chat"></div>
+  <!-- USERS -->
+  <div class="sidebar">
+    <div class="sidebar-header">🟢 Online</div>
+    <div id="users"></div>
+  </div>
 
-<div class="input-area">
-  <input id="msgInput" placeholder="Typ een bericht..." />
-  <button onclick="sendMessage()">Send</button>
+  <!-- CHAT -->
+  <div class="chat">
+    <div class="chat-header">MSN 2005 Chat</div>
+
+    <div id="messages"></div>
+
+    <div class="input-area">
+      <input id="msgInput" />
+      <button onclick="sendMessage()">Send</button>
+      <button onclick="nudge()">📳</button>
+      <button onclick="toggleEmoji()">😊</button>
+    </div>
+  </div>
+
 </div>
 
-<!-- Socket.IO -->
+<!-- EMOJI BOX -->
+<div id="emojis" style="display:none;position:fixed;bottom:80px;right:20px;background:white;border:1px solid #999;padding:5px;">
+  <span onclick="addEmoji('😊')">😊</span>
+  <span onclick="addEmoji('😂')">😂</span>
+  <span onclick="addEmoji('😍')">😍</span>
+  <span onclick="addEmoji('😎')">😎</span>
+</div>
+
+<!-- SOCKET -->
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 
 <script>
 const socket = io("https://buzzimessenger.onrender.com");
 
-const chat = document.getElementById("chat");
+const messages = document.getElementById("messages");
+const users = document.getElementById("users");
 const input = document.getElementById("msgInput");
 
-let myName = "You";
+let myName = prompt("Naam?");
+socket.emit("add_user", myName);
 
-// RECEIVE MESSAGE
+/* MESSAGES */
 socket.on("receive_message", (msg) => {
   const div = document.createElement("div");
-
-  const isMe = msg.from === myName;
-
-  div.className = "msg " + (isMe ? "me" : "other");
-  div.innerHTML = `
-    <div>${msg.text}</div>
-    <div style="font-size:10px;opacity:0.6;margin-top:4px;">
-      ${msg.from}
-    </div>
-  `;
-
-  chat.appendChild(div);
-  chat.scrollTop = chat.scrollHeight;
+  div.className = "msg";
+  div.innerHTML = `<b>${msg.from}:</b> ${msg.text}`;
+  messages.appendChild(div);
 });
 
-// SEND MESSAGE
-function sendMessage() {
-  const text = input.value;
-  if (!text) return;
+/* USERS */
+socket.on("update_users", (list) => {
+  users.innerHTML = "";
 
+  list.forEach(u => {
+    const div = document.createElement("div");
+    div.className = "user";
+    div.innerHTML = `<div class="dot online"></div>${u}`;
+    users.appendChild(div);
+  });
+});
+
+/* NUDE */
+socket.on("nudge", (from) => {
+  alert(from + " nudged you!");
+  document.body.style.transform = "translateX(10px)";
+  setTimeout(() => document.body.style.transform = "translateX(0)", 100);
+});
+
+/* SEND */
+function sendMessage() {
   socket.emit("send_message", {
     from: myName,
-    to: "all",
-    text: text
+    text: input.value
   });
-
   input.value = "";
+}
+
+/* NUDE BTN */
+function nudge() {
+  socket.emit("nudge", myName);
+}
+
+/* EMOJI */
+function toggleEmoji() {
+  const e = document.getElementById("emojis");
+  e.style.display = e.style.display === "block" ? "none" : "block";
+}
+
+function addEmoji(e) {
+  input.value += e;
 }
 </script>
 
