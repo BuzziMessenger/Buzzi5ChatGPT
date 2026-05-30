@@ -2,11 +2,16 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Buzzi Messenger 6.0</title>
+<title>Buzzi Messenger 11.0</title>
 
 <style>
-body { margin:0; font-family:Arial; background:#e6f0ff; }
+body {
+  margin:0;
+  font-family: Segoe UI;
+  background: linear-gradient(#dceaff, #f5f9ff);
+}
 
+/* LOGIN */
 #login {
   display:flex;
   height:100vh;
@@ -15,135 +20,153 @@ body { margin:0; font-family:Arial; background:#e6f0ff; }
   flex-direction:column;
 }
 
+input {
+  margin:5px;
+  padding:10px;
+}
+
+/* APP */
 #app {
   display:none;
   height:100vh;
 }
 
-#chat {
-  display:flex;
-  flex-direction:column;
-  height:100%;
+.header {
+  background:#2b579a;
+  color:white;
+  padding:10px;
 }
 
-#messages {
-  flex:1;
-  overflow:auto;
-  background:white;
+.container {
+  display:flex;
+  height:calc(100vh - 40px);
+}
+
+/* USERS */
+.users {
+  width:220px;
+  background:#1e3f73;
+  color:white;
   padding:10px;
+}
+
+/* CHAT */
+.chat {
+  flex:1;
+  display:flex;
+  flex-direction:column;
+}
+
+.messages {
+  flex:1;
+  padding:10px;
+  overflow:auto;
 }
 
 .msg {
-  margin:5px 0;
+  padding:8px;
+  margin:6px;
+  border-radius:10px;
+  max-width:60%;
 }
 
-#input {
+.me { background:#cfe3ff; margin-left:auto; }
+.them { background:white; }
+
+.input {
   display:flex;
-}
-
-input {
-  flex:1;
   padding:10px;
 }
+
 button {
   padding:10px;
+  background:#2b579a;
+  color:white;
+  border:none;
 }
 </style>
 </head>
 
 <body>
 
+<!-- LOGIN -->
 <div id="login">
-  <h2>Buzzi Messenger Login</h2>
+  <h2>Buzzi Messenger</h2>
   <input id="user" placeholder="username">
   <input id="pass" type="password" placeholder="password">
   <button onclick="register()">Register</button>
   <button onclick="login()">Login</button>
 </div>
 
+<!-- APP -->
 <div id="app">
 
-  <div id="chat">
-    <div id="messages"></div>
+  <div class="header">💙 Buzzi Messenger 11.0 FINAL</div>
 
-    <div id="input">
-      <input id="msg">
+  <div class="container">
 
-      <input type="file" id="file">
+    <div class="users" id="users"></div>
 
-      <button onclick="send()">Send</button>
+    <div class="chat">
+      <div class="messages" id="messages"></div>
+
+      <div class="input">
+        <input id="msg" placeholder="Type message..." oninput="typing(true)" onblur="typing(false)">
+        <button onclick="send()">Send</button>
+      </div>
     </div>
 
-    <button onclick="startVoice()">🎤 Voice</button>
   </div>
-
 </div>
+
+<!-- SOUNDS -->
+<audio id="snd_msg" src="https://cdn.pixabay.com/audio/message.mp3"></audio>
+<audio id="snd_login" src="https://cdn.pixabay.com/audio/notification.mp3"></audio>
 
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 
 <script>
 const socket = io("https://buzzimessenger.onrender.com");
 
-let username = "";
+let me = "";
+let currentChat = "global";
 
 /* REGISTER */
-async function register() {
-  await fetch("https://buzzimessenger.onrender.com/register", {
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body: JSON.stringify({
-      username: user.value,
-      password: pass.value
-    })
+function register() {
+  socket.emit("register", {
+    username: user.value,
+    password: pass.value
   });
-
-  alert("Registered!");
 }
 
 /* LOGIN */
-async function login() {
-  const res = await fetch("https://buzzimessenger.onrender.com/login", {
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body: JSON.stringify({
-      username: user.value,
-      password: pass.value
-    })
+function login() {
+  socket.emit("login", {
+    username: user.value,
+    password: pass.value
   });
+}
 
-  const data = await res.json();
-
-  username = data.username;
+/* LOGIN SUCCESS */
+socket.on("login_success", (data) => {
+  me = data.username;
 
   document.getElementById("login").style.display = "none";
   document.getElementById("app").style.display = "block";
+});
 
-  socket.emit("auth", { username });
-}
+/* SOUNDS */
+socket.on("sound", (type) => {
+  if (type === "message") snd_msg.play();
+  if (type === "login") snd_login.play();
+});
 
-/* SEND MESSAGE */
-async function send() {
-  let fileUrl = "";
-
-  const file = document.getElementById("file").files[0];
-
-  if (file) {
-    const form = new FormData();
-    form.append("file", file);
-
-    const res = await fetch("https://buzzimessenger.onrender.com/upload", {
-      method:"POST",
-      body: form
-    });
-
-    const data = await res.json();
-    fileUrl = data.url;
-  }
-
+/* SEND */
+function send() {
   socket.emit("send_message", {
-    from: username,
-    text: msg.value,
-    file: fileUrl
+    from: me,
+    to: currentChat,
+    text: msg.value
   });
 
   msg.value = "";
@@ -151,48 +174,29 @@ async function send() {
 
 /* RECEIVE */
 socket.on("receive_message", (m) => {
-  messages.innerHTML += `
-    <div class="msg">
-      <b>${m.from}:</b> ${m.text || ""}
-      ${m.file ? `<br><a href="${m.file}" target="_blank">📎 file</a>` : ""}
-    </div>
-  `;
+  const box = document.getElementById("messages");
+
+  const div = document.createElement("div");
+  div.className = "msg " + (m.from === me ? "me" : "them");
+
+  div.innerHTML = `<b>${m.from}</b><br>${m.text}`;
+
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
 });
 
-/* 🎤 VOICE */
-let recorder;
-let chunks = [];
+/* USERS */
+socket.on("users_update", (list) => {
+  users.innerHTML = list.map(u => `<div>👤 ${u}</div>`).join("");
+});
 
-async function startVoice() {
-  const stream = await navigator.mediaDevices.getUserMedia({ audio:true });
-
-  recorder = new MediaRecorder(stream);
-  recorder.start();
-
-  recorder.ondataavailable = e => chunks.push(e.data);
-
-  recorder.onstop = async () => {
-    const blob = new Blob(chunks, { type:"audio/webm" });
-
-    const form = new FormData();
-    form.append("file", blob, "voice.webm");
-
-    const res = await fetch("https://buzzimessenger.onrender.com/upload", {
-      method:"POST",
-      body: form
-    });
-
-    const data = await res.json();
-
-    socket.emit("send_message", {
-      from: username,
-      voice: data.url
-    });
-
-    chunks = [];
-  };
-
-  setTimeout(() => recorder.stop(), 4000);
+/* TYPING */
+function typing(state) {
+  socket.emit("typing", {
+    user: me,
+    to: currentChat,
+    isTyping: state
+  });
 }
 </script>
 
