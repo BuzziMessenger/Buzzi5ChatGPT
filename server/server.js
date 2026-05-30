@@ -10,13 +10,23 @@ const app = express();
 const server = http.createServer(app);
 
 const io = new Server(server, {
-  cors: { origin: "*" }
+  cors: { origin: "*" },
+  pingInterval: 10000,
+  pingTimeout: 5000
 });
 
 app.use(cors());
 app.use(express.json());
 
-/* 🔌 MONGO CONNECT + DEBUG */
+/* HEALTH CHECK (BELANGRIJK VOOR FRONTEND) */
+app.get("/health", (req, res) => {
+  res.json({
+    status: "ok",
+    time: Date.now()
+  });
+});
+
+/* MONGO */
 mongoose.connect(process.env.MONGO_URL)
   .then(() => console.log("✅ MongoDB connected"))
   .catch(err => console.log("❌ Mongo error:", err));
@@ -30,49 +40,18 @@ const UserSchema = new mongoose.Schema({
 
 const User = mongoose.model("User", UserSchema);
 
-/* ONLINE USERS */
+/* USERS */
 let onlineUsers = {};
 
 /* SOCKET */
 io.on("connection", (socket) => {
 
-  console.log("🟢 User connected:", socket.id);
+  console.log("🟢 CONNECT:", socket.id);
 
-  /* REGISTER */
-  socket.on("register", async ({ username, password }) => {
-    try {
-      console.log("REGISTER:", username);
-
-      const exists = await User.findOne({ username });
-
-      if (exists) {
-        console.log("❌ User exists");
-        socket.emit("register_failed", "User already exists");
-        return;
-      }
-
-      const hash = await bcrypt.hash(password, 10);
-
-      await User.create({
-        username,
-        password: hash,
-        avatar: ""
-      });
-
-      console.log("✅ Registered:", username);
-      socket.emit("register_ok");
-
-    } catch (err) {
-      console.log("❌ Register error:", err);
-      socket.emit("register_failed", "Server error");
-    }
-  });
-
-  /* LOGIN */
   socket.on("login", async ({ username, password }) => {
-    try {
-      console.log("LOGIN:", username);
+    console.log("LOGIN TRY:", username);
 
+    try {
       const user = await User.findOne({ username });
 
       if (!user) {
@@ -96,20 +75,37 @@ io.on("connection", (socket) => {
 
       io.emit("users_update", Object.values(onlineUsers));
 
-      console.log("✅ Login success:", username);
+      console.log("✅ LOGIN OK:", username);
 
     } catch (err) {
-      console.log("❌ Login error:", err);
+      console.log("🔥 LOGIN ERROR:", err);
       socket.emit("login_failed", "Server error");
     }
   });
 
-  /* MESSAGE */
+  socket.on("register", async ({ username, password }) => {
+    const exists = await User.findOne({ username });
+
+    if (exists) {
+      socket.emit("register_failed", "User exists");
+      return;
+    }
+
+    const hash = await bcrypt.hash(password, 10);
+
+    await User.create({
+      username,
+      password: hash,
+      avatar: ""
+    });
+
+    socket.emit("register_ok");
+  });
+
   socket.on("send_message", (msg) => {
     io.emit("receive_message", msg);
   });
 
-  /* DISCONNECT */
   socket.on("disconnect", () => {
     delete onlineUsers[socket.id];
     io.emit("users_update", Object.values(onlineUsers));
@@ -117,5 +113,5 @@ io.on("connection", (socket) => {
 });
 
 server.listen(3000, () => {
-  console.log("🚀 Buzzi Messenger 11.1 FIXED running");
+  console.log("🚀 Buzzi Bulletproof 11.2 running");
 });

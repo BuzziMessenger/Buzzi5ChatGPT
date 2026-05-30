@@ -2,13 +2,24 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Buzzi Messenger 11.1 FIX</title>
+<title>Buzzi Messenger 11.2 Bulletproof</title>
 
 <style>
 body {
   margin:0;
-  font-family: Segoe UI;
+  font-family:Segoe UI;
   background:#eaf2ff;
+}
+
+/* STATUS BAR */
+#statusBar {
+  position:fixed;
+  top:0;
+  width:100%;
+  background:#222;
+  color:white;
+  padding:6px;
+  font-size:12px;
 }
 
 /* LOGIN */
@@ -20,16 +31,9 @@ body {
   flex-direction:column;
 }
 
-input {
-  margin:5px;
-  padding:10px;
-}
+input { margin:5px; padding:10px; }
 
-/* APP */
-#app {
-  display:none;
-  height:100vh;
-}
+#app { display:none; }
 
 .header {
   background:#2b579a;
@@ -66,10 +70,7 @@ input {
   margin:5px;
   padding:8px;
   border-radius:10px;
-  max-width:60%;
 }
-
-.me { background:#cfe3ff; margin-left:auto; }
 
 .input {
   display:flex;
@@ -87,9 +88,11 @@ button {
 
 <body>
 
+<div id="statusBar">⚪ Connecting...</div>
+
 <!-- LOGIN -->
 <div id="login">
-  <h2>Buzzi Messenger Login</h2>
+  <h2>Buzzi Messenger</h2>
 
   <input id="user" placeholder="username">
   <input id="pass" type="password" placeholder="password">
@@ -103,7 +106,7 @@ button {
 <!-- APP -->
 <div id="app">
 
-  <div class="header">💙 Buzzi Messenger FIXED</div>
+  <div class="header">💙 Buzzi 11.2 Bulletproof</div>
 
   <div class="container">
 
@@ -127,23 +130,84 @@ button {
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 
 <script>
-const socket = io("https://buzzimessenger.onrender.com");
 
+/* 🔥 MULTIPLE FALLBACK URLS */
+const SOCKET_URLS = [
+  "https://buzzimessenger.onrender.com",
+  "http://localhost:3000"
+];
+
+let socket;
 let me = "";
 
-/* STATUS TEXT */
-function setStatus(txt) {
-  document.getElementById("status").innerText = txt;
-}
+/* CONNECT FUNCTION */
+function connect(urlIndex = 0) {
 
-/* REGISTER */
-function register() {
-  socket.emit("register", {
-    username: user.value,
-    password: pass.value
+  if (urlIndex >= SOCKET_URLS.length) {
+    document.getElementById("statusBar").innerText = "🔴 Offline (no server)";
+    return;
+  }
+
+  const url = SOCKET_URLS[urlIndex];
+
+  document.getElementById("statusBar").innerText = "⚪ Connecting: " + url;
+
+  socket = io(url, {
+    reconnection: true,
+    reconnectionAttempts: 10,
+    reconnectionDelay: 1000
   });
 
-  setStatus("Registering...");
+  socket.on("connect", () => {
+    document.getElementById("statusBar").innerText = "🟢 Connected";
+  });
+
+  socket.on("disconnect", () => {
+    document.getElementById("statusBar").innerText = "🟠 Disconnected - retrying...";
+  });
+
+  socket.on("connect_error", () => {
+    document.getElementById("statusBar").innerText = "🔴 Failed - trying fallback...";
+    setTimeout(() => connect(urlIndex + 1), 2000);
+  });
+
+  bindSocketEvents();
+}
+
+connect();
+
+/* EVENTS */
+function bindSocketEvents() {
+
+  socket.on("login_success", (data) => {
+    me = data.username;
+    login.style.display = "none";
+    app.style.display = "block";
+  });
+
+  socket.on("login_failed", (msg) => {
+    status.innerText = "❌ " + msg;
+  });
+
+  socket.on("register_ok", () => {
+    status.innerText = "✅ Registered";
+  });
+
+  socket.on("register_failed", (msg) => {
+    status.innerText = "❌ " + msg;
+  });
+
+  socket.on("users_update", (list) => {
+    users.innerHTML = list.map(u => "👤 " + u).join("<br>");
+  });
+
+  socket.on("receive_message", (m) => {
+    const div = document.createElement("div");
+    div.className = "msg";
+    div.innerHTML = "<b>" + m.from + "</b><br>" + m.text;
+    messages.appendChild(div);
+    messages.scrollTop = messages.scrollHeight;
+  });
 }
 
 /* LOGIN */
@@ -153,36 +217,18 @@ function login() {
     password: pass.value
   });
 
-  setStatus("Logging in...");
+  status.innerText = "Logging in...";
 }
 
-/* SUCCESS */
-socket.on("login_success", (data) => {
-  me = data.username;
+/* REGISTER */
+function register() {
+  socket.emit("register", {
+    username: user.value,
+    password: pass.value
+  });
 
-  document.getElementById("login").style.display = "none";
-  document.getElementById("app").style.display = "block";
-
-  setStatus("");
-});
-
-/* FAIL */
-socket.on("login_failed", (msg) => {
-  setStatus("❌ " + msg);
-});
-
-socket.on("register_ok", () => {
-  setStatus("✅ Registered! You can login now");
-});
-
-socket.on("register_failed", (msg) => {
-  setStatus("❌ " + msg);
-});
-
-/* USERS */
-socket.on("users_update", (list) => {
-  users.innerHTML = list.map(u => `<div>👤 ${u}</div>`).join("");
-});
+  status.innerText = "Registering...";
+}
 
 /* SEND */
 function send() {
@@ -194,16 +240,6 @@ function send() {
   msg.value = "";
 }
 
-/* RECEIVE */
-socket.on("receive_message", (m) => {
-  const div = document.createElement("div");
-  div.className = "msg " + (m.from === me ? "me" : "");
-
-  div.innerHTML = `<b>${m.from}</b><br>${m.text}`;
-
-  messages.appendChild(div);
-  messages.scrollTop = messages.scrollHeight;
-});
 </script>
 
 </body>
